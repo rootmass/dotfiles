@@ -14,7 +14,10 @@ export PATH
 function package() {
     apt update 
     apt install tmux git curl wget zsh autojump docky htop grc thefuck proxychains4 -y
+    apt-get install tmux htop ibus ibus-table-wubi zsh docky dkms linux-headers-`uname -r` build-essential  qemu-kvm docker.io qtcurve kde-style-qtcurve kde-config-gtk-style-preview konsole grc htop conky realpath xtrlock
 
+    apt-get install xclip wireshark tcpdump
+    setcap cap_net_raw,cap_net_admin=eip /usr/bin/dumpcap
 }
 
 function docker(){
