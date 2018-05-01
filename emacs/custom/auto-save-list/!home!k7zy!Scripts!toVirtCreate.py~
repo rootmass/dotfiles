@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright©K7zy
+# CreateTime: 2017-06-27 23:05:03
+
+
+import uuid, random, shutil, sys, os
+import libvirt
+import time
+import ossaudiodev, logging
+import psutil
+
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
+class VirtCreate(object):
+    def __init__(self, name, memory):
+        self.memory = memory
+        self.name = name
+
+    def rando_mac(self):
+        mac = [0x52, 0x54, 0x00,
+               random.randint(0x00, 0x7f),
+               random.randint(0x00, 0xff),
+               random.randint(0x00, 0xff)]
+        return ':'.join(map(lambda x: "%02x" % x, mac))
+
+    def rando_vnc_port(self):
+        return str(random.sample(range(54312, 65535), 1))
+
+    def xml_read(self):
+        root = ET.ElementTree(file="templates.xml").getroot()
+        return root
+
+    def copy_img():
+        pass
+
+
+    def change_node_text(self, nodelist, text, is_add=False, is_delete=False):
+        pass
+
+    def start(self):
+        print(self.name, self.memory, self.rando_mac(), self.rando_vnc_port())
+        print(self.xml_read())
+
+if __name__ == '__main__':
+    run = VirtCreate('Virt', 900)
+    run.start()

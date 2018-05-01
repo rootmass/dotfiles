@@ -1,0 +1,4253 @@
+PROMPT=$'%{$fg[white]%}$(~/.rvm/bin/rvm-prompt) %{$fg_bold[cyan]%}%~%{$reset_color%}$(git_prompt_info) %{$fg[cyan]%}%D{[%I:%M:%S]}\
+%{$fg_bold[green]%}%n$%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[white]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="*"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+PROMPT='%{$fg[blue]%}%n%{$reset_color%} on %{$fg[red]%}%M%{$reset_color%} in %{$fg[blue]%}%~%b%{$reset_color%}$(git_time_since_commit)$(check_git_prompt_info)
+$ '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[white]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%})"
+
+# Text to display if the branch is dirty
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$reset_color%}" 
+
+# Text to display if the branch is clean
+ZSH_THEME_GIT_PROMPT_CLEAN="" 
+
+# Colors vary depending on time lapsed.
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$fg[green]%}"
+ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$fg[yellow]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$fg[red]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$fg[cyan]%}"
+
+
+# Git sometimes goes into a detached head state. git_prompt_info doesn't
+# return anything in this case. So wrap it in another function and check
+# for an empty string.
+function check_git_prompt_info() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        if [[ -z $(git_prompt_info) ]]; then
+            echo "%{$fg[magenta]%}detached-head%{$reset_color%})"
+        else
+            echo "$(git_prompt_info)"
+        fi
+    fi
+}
+
+# Determine if we are using a gemset.
+function rvm_gemset() {
+    if hash rvm 2>/dev/null; then
+        GEMSET=`rvm gemset list | grep '=>' | cut -b4-`
+        if [[ -n $GEMSET ]]; then
+            echo "%{$fg[yellow]%}$GEMSET%{$reset_color%}|"
+        fi 
+    fi
+}
+
+# Determine the time since last commit. If branch is clean,
+# use a neutral color, otherwise colors will vary according to time.
+function git_time_since_commit() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        # Only proceed if there is actually a commit.
+        if [[ $(git log 2>&1 > /dev/null | grep -c "^fatal: bad default revision") == 0 ]]; then
+            # Get the last commit.
+            last_commit=`git log --pretty=format:'%at' -1 2> /dev/null`
+            now=`date +%s`
+            seconds_since_last_commit=$((now-last_commit))
+
+            # Totals
+            MINUTES=$((seconds_since_last_commit / 60))
+            HOURS=$((seconds_since_last_commit/3600))
+           
+            # Sub-hours and sub-minutes
+            DAYS=$((seconds_since_last_commit / 86400))
+            SUB_HOURS=$((HOURS % 24))
+            SUB_MINUTES=$((MINUTES % 60))
+            
+            if [[ -n $(git status -s 2> /dev/null) ]]; then
+                if [ "$MINUTES" -gt 30 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG"
+                elif [ "$MINUTES" -gt 10 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM"
+                else
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT"
+                fi
+            else
+                COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            fi
+
+            if [ "$HOURS" -gt 24 ]; then
+                echo "($(rvm_gemset)$COLOR${DAYS}d${SUB_HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            elif [ "$MINUTES" -gt 60 ]; then
+                echo "($(rvm_gemset)$COLOR${HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            else
+                echo "($(rvm_gemset)$COLOR${MINUTES}m%{$reset_color%}|"
+            fi
+        else
+            COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            echo "($(rvm_gemset)$COLOR~|"
+        fi
+    fi
+}
+#!/usr/bin/env zsh
+# #
+# # #README
+# #
+# # This theme provides two customizable header functionalities:
+# # a) displaying a pseudo-random message from a database of quotations
+# # (https://en.wikipedia.org/wiki/Fortune_%28Unix%29)
+# # b) displaying randomly command line tips from The command line fu
+# # (http://www.commandlinefu.com) community: in order to make use of this functionality
+# # you will need Internet connection.
+# # This theme provides as well information for the current user's context, like;
+# # branch and status for the current version control system (git and svn currently
+# # supported) and time, presented to the user in a non invasive volatile way.
+# #
+# # #REQUIREMENTS
+# # This theme requires wget::
+# # -Homebrew-osx- brew install wget
+# # -Debian/Ubuntu- apt-get install wget
+# # and fortune ::
+# # -Homebrew-osx- brew install fortune
+# # -Debian/Ubuntu- apt-get install fortune
+# #
+# # optionally:
+# # -Oh-myzsh vcs plug-ins git and svn.
+# # -Solarized theme (https://github.com/altercation/solarized/)
+# # -OS X: iTerm 2 (http://www.iterm2.com/)
+# # -font Source code pro (https://github.com/adobe/source-code-pro)
+# #
+# # This theme's look and feel is based on the Aaron Toponce's zsh theme, more info:
+# # http://pthree.org/2008/11/23/727/
+# # enjoy!
+########## COLOR ###########
+for COLOR in CYAN WHITE YELLOW MAGENTA BLACK BLUE RED DEFAULT GREEN GREY; do
+    eval PR_$COLOR='%{$fg[${(L)COLOR}]%}'
+    eval PR_BRIGHT_$COLOR='%{$fg_bold[${(L)COLOR}]%}'
+done
+PR_RESET="%{$reset_color%}"
+RED_START="${PR_RESET}${PR_GREY}<${PR_RESET}${PR_RED}<${PR_BRIGHT_RED}<${PR_RESET} "
+RED_END="${PR_RESET}${PR_BRIGHT_RED}>${PR_RESET}${PR_RED}>${PR_GREY}>${PR_RESET} "
+GREEN_END="${PR_RESET}${PR_BRIGHT_GREEN}>${PR_RESET}${PR_GREEN}>${PR_GREY}>${PR_RESET} "
+GREEN_BASE_START="${PR_RESET}${PR_GREY}>${PR_RESET}${PR_GREEN}>${PR_BRIGHT_GREEN}>${PR_RESET}"
+GREEN_START_P1="${PR_RESET}${GREEN_BASE_START}${PR_RESET} "
+DIVISION="${PR_RESET}${PR_RED} < ${PR_RESET}"
+VCS_DIRTY_COLOR="${PR_RESET}${PR_YELLOW}"
+VCS_CLEAN_COLOR="${PR_RESET}${PR_GREEN}"
+VCS_SUFIX_COLOR="${PR_RESET}${PR_RED}› ${PR_RESET}"
+# ########## COLOR ###########
+# ########## SVN ###########
+ZSH_THEME_SVN_PROMPT_PREFIX="${PR_RESET}${PR_RED}‹svn:"
+ZSH_THEME_SVN_PROMPT_SUFFIX=""
+ZSH_THEME_SVN_PROMPT_DIRTY="${VCS_DIRTY_COLOR} ✘${VCS_SUFIX_COLOR}"
+ZSH_THEME_SVN_PROMPT_CLEAN="${VCS_CLEAN_COLOR} ✔${VCS_SUFIX_COLOR}"
+# ########## SVN ###########
+# ########## GIT ###########
+ZSH_THEME_GIT_PROMPT_PREFIX="${PR_RESET}${PR_RED}‹git:"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY="${VCS_DIRTY_COLOR} ✘${VCS_SUFIX_COLOR}"
+ZSH_THEME_GIT_PROMPT_CLEAN="${VCS_CLEAN_COLOR} ✔${VCS_SUFIX_COLOR}"
+ZSH_THEME_GIT_PROMPT_ADDED="${PR_RESET}${PR_YELLOW} ✚${PR_RESET}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="${PR_RESET}${PR_YELLOW} ✹${PR_RESET}"
+ZSH_THEME_GIT_PROMPT_DELETED="${PR_RESET}${PR_YELLOW} ✖${PR_RESET}"
+ZSH_THEME_GIT_PROMPT_RENAMED="${PR_RESET}${PR_YELLOW} ➜${PR_RESET}"
+ZSH_THEME_GIT_PROMPT_UNMERGED="${PR_RESET}${PR_YELLOW} ═${PR_RESET}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="${PR_RESET}${PR_YELLOW} ✭${PR_RESET}"
+# ########## GIT ###########
+function precmd {
+    #gets the fortune
+    ps1_fortune () {
+        #Choose from all databases, regardless of whether they are considered "offensive"
+        fortune -a
+    }
+    #obtains the tip
+    ps1_command_tip () {
+        wget -qO - http://www.commandlinefu.com/commands/random/plaintext | sed 1d | sed '/^$/d'
+    }
+    prompt_header () {
+        if [[ "true" == "$ENABLE_COMMAND_TIP" ]]; then
+            ps1_command_tip
+        else
+            ps1_fortune
+        fi
+    }
+    PROMPT_HEAD="${RED_START}${PR_YELLOW}$(prompt_header)${PR_RESET}"
+    # set a simple variable to show when in screen
+    if [[ -n "${WINDOW}" ]]; then
+        SCREEN=""
+    fi
+}
+
+# Context: user@directory or just directory
+prompt_context () {
+    if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
+        echo -n "${PR_RESET}${PR_RED}$USER@%m${PR_RESET}${PR_BRIGHT_YELLOW}%~%<<${PR_RESET}"
+    else
+        echo -n "${PR_RESET}${PR_BRIGHT_YELLOW}%~%<<${PR_RESET}"
+    fi
+}
+
+set_prompt () {
+    # required for the prompt
+    setopt prompt_subst
+    autoload zsh/terminfo
+
+    # ######### PROMPT #########
+    PROMPT='${PROMPT_HEAD}
+${RED_START}$(prompt_context)
+${GREEN_START_P1}'
+    RPROMPT='${PR_RESET}$(git_prompt_info)$(svn_prompt_info)${PR_YELLOW}%D{%R.%S %a %b %d %Y} ${GREEN_END}${PR_RESET}'
+    # Matching continuation prompt
+    PROMPT2='${GREEN_BASE_START}${PR_RESET} %_ ${GREEN_BASE_START}${PR_RESET} '
+    # ######### PROMPT #########
+}
+
+set_prompt
+# af-magic.zsh-theme
+# Repo: https://github.com/andyfleming/oh-my-zsh
+# Direct Link: https://github.com/andyfleming/oh-my-zsh/blob/master/themes/af-magic.zsh-theme
+
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="green"; fi
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+# primary prompt
+PROMPT='$FG[237]------------------------------------------------------------%{$reset_color%}
+$FG[032]%~\
+$(git_prompt_info) \
+$FG[105]%(!.#.»)%{$reset_color%} '
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+RPS1='${return_code}'
+
+
+# color vars
+eval my_gray='$FG[237]'
+eval my_orange='$FG[214]'
+
+# right prompt
+if type "virtualenv_prompt_info" > /dev/null
+then
+	RPROMPT='$(virtualenv_prompt_info)$my_gray%n@%m%{$reset_color%}%'
+else
+	RPROMPT='$my_gray%n@%m%{$reset_color%}%'
+fi
+
+# git settings
+ZSH_THEME_GIT_PROMPT_PREFIX="$FG[075]($FG[078]"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="$my_orange*%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="$FG[075])%{$reset_color%}"
+if [ $UID -eq 0 ]; then CARETCOLOR="red"; else CARETCOLOR="blue"; fi
+
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%m %{${fg_bold[blue]}%}:: %{$reset_color%}%{${fg[green]}%}%3~ $(git_prompt_info)%{${fg_bold[$CARETCOLOR]}%}»%{${reset_color}%} '
+
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+# vim:ft=zsh ts=2 sw=2 sts=2
+#
+# agnoster's Theme - https://gist.github.com/3712874
+# A Powerline-inspired theme for ZSH
+#
+# # README
+#
+# In order for this theme to render correctly, you will need a
+# [Powerline-patched font](https://github.com/Lokaltog/powerline-fonts).
+# Make sure you have a recent version: the code points that Powerline
+# uses changed in 2012, and older versions will display incorrectly,
+# in confusing ways.
+#
+# In addition, I recommend the
+# [Solarized theme](https://github.com/altercation/solarized/) and, if you're
+# using it on Mac OS X, [iTerm 2](http://www.iterm2.com/) over Terminal.app -
+# it has significantly better color fidelity.
+#
+# # Goals
+#
+# The aim of this theme is to only show you *relevant* information. Like most
+# prompts, it will only show git information when in a git working directory.
+# However, it goes a step further: everything from the current user and
+# hostname to whether the last call exited with an error to whether background
+# jobs are running in this shell will all be displayed automatically when
+# appropriate.
+
+### Segment drawing
+# A few utility functions to make it easy and re-usable to draw segmented prompts
+
+CURRENT_BG='NONE'
+
+# Special Powerline characters
+
+() {
+  local LC_ALL="" LC_CTYPE="en_US.UTF-8"
+  # NOTE: This segment separator character is correct.  In 2012, Powerline changed
+  # the code points they use for their special characters. This is the new code point.
+  # If this is not working for you, you probably have an old version of the
+  # Powerline-patched fonts installed. Download and install the new version.
+  # Do not submit PRs to change this unless you have reviewed the Powerline code point
+  # history and have new information.
+  # This is defined using a Unicode escape sequence so it is unambiguously readable, regardless of
+  # what font the user is viewing this source code in. Do not replace the
+  # escape sequence with a single literal character.
+  # Do not change this! Do not make it '\u2b80'; that is the old, wrong code point.
+  SEGMENT_SEPARATOR=$'\ue0b0'
+}
+
+# Begin a segment
+# Takes two arguments, background and foreground. Both can be omitted,
+# rendering default background/foreground.
+prompt_segment() {
+  local bg fg
+  [[ -n $1 ]] && bg="%K{$1}" || bg="%k"
+  [[ -n $2 ]] && fg="%F{$2}" || fg="%f"
+  if [[ $CURRENT_BG != 'NONE' && $1 != $CURRENT_BG ]]; then
+    echo -n " %{$bg%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR%{$fg%} "
+  else
+    echo -n "%{$bg%}%{$fg%} "
+  fi
+  CURRENT_BG=$1
+  [[ -n $3 ]] && echo -n $3
+}
+
+# End the prompt, closing any open segments
+prompt_end() {
+  if [[ -n $CURRENT_BG ]]; then
+    echo -n " %{%k%F{$CURRENT_BG}%}$SEGMENT_SEPARATOR"
+  else
+    echo -n "%{%k%}"
+  fi
+  echo -n "%{%f%}"
+  CURRENT_BG=''
+}
+
+### Prompt components
+# Each component will draw itself, and hide itself if no information needs to be shown
+
+# Context: user@hostname (who am I and where am I)
+prompt_context() {
+  if [[ "$USER" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
+    prompt_segment black default "%(!.%{%F{yellow}%}.)$USER@%m"
+  fi
+}
+
+# Git: branch/detached head, dirty status
+prompt_git() {
+  (( $+commands[git] )) || return
+  local PL_BRANCH_CHAR
+  () {
+    local LC_ALL="" LC_CTYPE="en_US.UTF-8"
+    PL_BRANCH_CHAR=$'\ue0a0'         # 
+  }
+  local ref dirty mode repo_path
+  repo_path=$(git rev-parse --git-dir 2>/dev/null)
+
+  if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    dirty=$(parse_git_dirty)
+    ref=$(git symbolic-ref HEAD 2> /dev/null) || ref="➦ $(git rev-parse --short HEAD 2> /dev/null)"
+    if [[ -n $dirty ]]; then
+      prompt_segment yellow black
+    else
+      prompt_segment green black
+    fi
+
+    if [[ -e "${repo_path}/BISECT_LOG" ]]; then
+      mode=" <B>"
+    elif [[ -e "${repo_path}/MERGE_HEAD" ]]; then
+      mode=" >M<"
+    elif [[ -e "${repo_path}/rebase" || -e "${repo_path}/rebase-apply" || -e "${repo_path}/rebase-merge" || -e "${repo_path}/../.dotest" ]]; then
+      mode=" >R>"
+    fi
+
+    setopt promptsubst
+    autoload -Uz vcs_info
+
+    zstyle ':vcs_info:*' enable git
+    zstyle ':vcs_info:*' get-revision true
+    zstyle ':vcs_info:*' check-for-changes true
+    zstyle ':vcs_info:*' stagedstr '✚'
+    zstyle ':vcs_info:*' unstagedstr '●'
+    zstyle ':vcs_info:*' formats ' %u%c'
+    zstyle ':vcs_info:*' actionformats ' %u%c'
+    vcs_info
+    echo -n "${ref/refs\/heads\//$PL_BRANCH_CHAR }${vcs_info_msg_0_%% }${mode}"
+  fi
+}
+
+prompt_bzr() {
+    (( $+commands[bzr] )) || return
+    if (bzr status >/dev/null 2>&1); then
+        status_mod=`bzr status | head -n1 | grep "modified" | wc -m`
+        status_all=`bzr status | head -n1 | wc -m`
+        revision=`bzr log | head -n2 | tail -n1 | sed 's/^revno: //'`
+        if [[ $status_mod -gt 0 ]] ; then
+            prompt_segment yellow black
+            echo -n "bzr@"$revision "✚ "
+        else
+            if [[ $status_all -gt 0 ]] ; then
+                prompt_segment yellow black
+                echo -n "bzr@"$revision
+
+            else
+                prompt_segment green black
+                echo -n "bzr@"$revision
+            fi
+        fi
+    fi
+}
+
+prompt_hg() {
+  (( $+commands[hg] )) || return
+  local rev status
+  if $(hg id >/dev/null 2>&1); then
+    if $(hg prompt >/dev/null 2>&1); then
+      if [[ $(hg prompt "{status|unknown}") = "?" ]]; then
+        # if files are not added
+        prompt_segment red white
+        st='±'
+      elif [[ -n $(hg prompt "{status|modified}") ]]; then
+        # if any modification
+        prompt_segment yellow black
+        st='±'
+      else
+        # if working copy is clean
+        prompt_segment green black
+      fi
+      echo -n $(hg prompt "☿ {rev}@{branch}") $st
+    else
+      st=""
+      rev=$(hg id -n 2>/dev/null | sed 's/[^-0-9]//g')
+      branch=$(hg id -b 2>/dev/null)
+      if `hg st | grep -q "^\?"`; then
+        prompt_segment red black
+        st='±'
+      elif `hg st | grep -q "^[MA]"`; then
+        prompt_segment yellow black
+        st='±'
+      else
+        prompt_segment green black
+      fi
+      echo -n "☿ $rev@$branch" $st
+    fi
+  fi
+}
+
+# Dir: current working directory
+prompt_dir() {
+  prompt_segment blue black '%~'
+}
+
+# Virtualenv: current working virtualenv
+prompt_virtualenv() {
+  local virtualenv_path="$VIRTUAL_ENV"
+  if [[ -n $virtualenv_path && -n $VIRTUAL_ENV_DISABLE_PROMPT ]]; then
+    prompt_segment blue black "(`basename $virtualenv_path`)"
+  fi
+}
+
+# Status:
+# - was there an error
+# - am I root
+# - are there background jobs?
+prompt_status() {
+  local symbols
+  symbols=()
+  [[ $RETVAL -ne 0 ]] && symbols+="%{%F{red}%}✘"
+  [[ $UID -eq 0 ]] && symbols+="%{%F{yellow}%}⚡"
+  [[ $(jobs -l | wc -l) -gt 0 ]] && symbols+="%{%F{cyan}%}⚙"
+
+  [[ -n "$symbols" ]] && prompt_segment black default "$symbols"
+}
+
+## Main prompt
+build_prompt() {
+  RETVAL=$?
+  prompt_status
+  prompt_virtualenv
+  prompt_context
+  prompt_dir
+  prompt_git
+  prompt_bzr
+  prompt_hg
+  prompt_end
+}
+
+PROMPT='%{%f%b%k%}$(build_prompt) '
+
+local user='%{$fg[magenta]%}%n@%{$fg[magenta]%}%m%{$reset_color%}'
+local pwd='%{$fg[blue]%}%~%{$reset_color%}'
+local rvm=''
+if which rvm-prompt &> /dev/null; then
+  rvm='%{$fg[green]%}‹$(rvm-prompt i v g)›%{$reset_color%}'
+else
+  if which rbenv &> /dev/null; then
+    rvm='%{$fg[green]%}‹$(rbenv version | sed -e "s/ (set.*$//")›%{$reset_color%}'
+  fi
+fi
+local return_code='%(?..%{$fg[red]%}%? ↵%{$reset_color%})'
+local git_branch='$(git_prompt_status)%{$reset_color%}$(git_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+
+PROMPT="${user} ${pwd}$ "
+RPROMPT="${return_code} ${git_branch} ${rvm}"
+# vim:ft=zsh ts=2 sw=2 sts=2
+
+rvm_current() {
+  rvm current 2>/dev/null
+}
+
+rbenv_version() {
+  rbenv version 2>/dev/null | awk '{print $1}'
+}
+
+PROMPT='
+%{$fg_bold[green]%}${PWD/#$HOME/~}%{$reset_color%}$(git_prompt_info) ⌚ %{$fg_bold[red]%}%*%{$reset_color%}
+$ '
+
+# Must use Powerline font, for \uE0A0 to render.
+ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[magenta]%}\uE0A0 "
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}!"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[green]%}?"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+  RPROMPT='%{$fg_bold[red]%}‹$(rvm_current)›%{$reset_color%}'
+else
+  if which rbenv &> /dev/null; then
+    RPROMPT='%{$fg_bold[red]%}$(rbenv_version)%{$reset_color%}'
+  fi
+fi
+
+function toon {
+  echo -n ""
+}
+
+get_git_dirty() {
+  git diff --quiet || echo '*'
+}
+
+autoload -Uz vcs_info
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:*' unstagedstr '%F{red}*'   # display this when there are unstaged changes
+zstyle ':vcs_info:*' stagedstr '%F{yellow}+'  # display this when there are staged changes
+zstyle ':vcs_info:*' actionformats \
+    '%F{5}%F{5}[%F{2}%b%F{3}|%F{1}%a%c%u%F{5}]%f '
+zstyle ':vcs_info:*' formats       \
+    '%F{5}%F{5}[%F{2}%b%c%u%F{5}]%f '
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{3}%r'
+zstyle ':vcs_info:*' enable git cvs svn
+
+theme_precmd () {
+    vcs_info
+}
+
+setopt prompt_subst
+PROMPT='%{$fg[magenta]%}$(toon)%{$reset_color%} %~/ %{$reset_color%}${vcs_info_msg_0_}%{$reset_color%}'
+
+autoload -U add-zsh-hook
+add-zsh-hook precmd theme_precmdif [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="yellow"; fi
+
+PROMPT='%{$fg[$NCOLOR]%}%c ➤ %{$reset_color%}'
+RPROMPT='%{$fg[$NCOLOR]%}%p $(git_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY="*"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+# See http://geoff.greer.fm/lscolors/
+export LSCOLORS="exfxcxdxbxbxbxbxbxbxbx"
+export LS_COLORS="di=34;40:ln=35;40:so=32;40:pi=33;40:ex=31;40:bd=31;40:cd=31;40:su=31;40:sg=31;40:tw=31;40:ow=31;40:"
+
+
+PROMPT='$fg_bold[blue][ $fg[red]%t $fg_bold[blue]] $fg_bold[blue] [ $fg[red]%n@%m:%~$(git_prompt_info)$fg[yellow]$(rvm_prompt_info)$fg_bold[blue] ]$reset_color
+ $ '
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="$fg_bold[green]("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"
+ZSH_THEME_GIT_PROMPT_CLEAN="✔"
+ZSH_THEME_GIT_PROMPT_DIRTY="✗"
+# AVIT ZSH Theme
+
+PROMPT='
+$(_user_host)${_current_dir} $(git_prompt_info) $(_ruby_version)
+%{$fg[$CARETCOLOR]%}▶%{$resetcolor%} '
+
+PROMPT2='%{$fg[$CARETCOLOR]%}◀%{$reset_color%} '
+
+RPROMPT='$(_vi_status)%{$(echotc UP 1)%}$(_git_time_since_commit) $(git_prompt_status) ${_return_status}%{$(echotc DO 1)%}'
+
+local _current_dir="%{$fg_bold[blue]%}%3~%{$reset_color%} "
+local _return_status="%{$fg_bold[red]%}%(?..⍉)%{$reset_color%}"
+local _hist_no="%{$fg[grey]%}%h%{$reset_color%}"
+
+function _current_dir() {
+  local _max_pwd_length="65"
+  if [[ $(echo -n $PWD | wc -c) -gt ${_max_pwd_length} ]]; then
+    echo "%{$fg_bold[blue]%}%-2~ ... %3~%{$reset_color%} "
+  else
+    echo "%{$fg_bold[blue]%}%~%{$reset_color%} "
+  fi
+}
+
+function _user_host() {
+  if [[ -n $SSH_CONNECTION ]]; then
+    me="%n@%m"
+  elif [[ $LOGNAME != $USER ]]; then
+    me="%n"
+  fi
+  if [[ -n $me ]]; then
+    echo "%{$fg[cyan]%}$me%{$reset_color%}:"
+  fi
+}
+
+function _vi_status() {
+  if {echo $fpath | grep -q "plugins/vi-mode"}; then
+    echo "$(vi_mode_prompt_info)"
+  fi
+}
+
+function _ruby_version() {
+  if {echo $fpath | grep -q "plugins/rvm"}; then
+    echo "%{$fg[grey]%}$(rvm_prompt_info)%{$reset_color%}"
+  elif {echo $fpath | grep -q "plugins/rbenv"}; then
+    echo "%{$fg[grey]%}$(rbenv_prompt_info)%{$reset_color%}"
+  fi
+}
+
+# Determine the time since last commit. If branch is clean,
+# use a neutral color, otherwise colors will vary according to time.
+function _git_time_since_commit() {
+# Only proceed if there is actually a commit.
+  if git log -1 > /dev/null 2>&1; then
+    # Get the last commit.
+    last_commit=$(git log --pretty=format:'%at' -1 2> /dev/null)
+    now=$(date +%s)
+    seconds_since_last_commit=$((now-last_commit))
+
+    # Totals
+    minutes=$((seconds_since_last_commit / 60))
+    hours=$((seconds_since_last_commit/3600))
+
+    # Sub-hours and sub-minutes
+    days=$((seconds_since_last_commit / 86400))
+    sub_hours=$((hours % 24))
+    sub_minutes=$((minutes % 60))
+
+    if [ $hours -gt 24 ]; then
+      commit_age="${days}d"
+    elif [ $minutes -gt 60 ]; then
+      commit_age="${sub_hours}h${sub_minutes}m"
+    else
+      commit_age="${minutes}m"
+    fi
+
+    color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
+    echo "$color$commit_age%{$reset_color%}"
+  fi
+}
+
+if [[ $USER == "root" ]]; then
+  CARETCOLOR="red"
+else
+  CARETCOLOR="white"
+fi
+
+MODE_INDICATOR="%{$fg_bold[yellow]%}❮%{$reset_color%}%{$fg[yellow]%}❮❮%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$fg[green]%}✔%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%}✚ "
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%}⚑ "
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%}✖ "
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%}▴ "
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[cyan]%}§ "
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[white]%}◒ "
+
+# Colors vary depending on time lapsed.
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$fg[green]%}"
+ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$fg[yellow]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$fg[red]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$fg[white]%}"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="exfxcxdxbxegedabagacad"
+export LS_COLORS='di=34;40:ln=35;40:so=32;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:'
+export GREP_COLOR='1;33'
+# the svn plugin has to be activated for this to work.
+local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
+PROMPT='${ret_status}%{$fg_bold[green]%}%p %{$fg[cyan]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%}$(svn_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%})%{$fg[yellow]%} ✗ %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%}) "
+
+ZSH_PROMPT_BASE_COLOR="%{$fg_bold[blue]%}"
+ZSH_THEME_REPO_NAME_COLOR="%{$fg_bold[red]%}"
+
+ZSH_THEME_SVN_PROMPT_PREFIX="svn:("
+ZSH_THEME_SVN_PROMPT_SUFFIX=")"
+ZSH_THEME_SVN_PROMPT_DIRTY="%{$fg[red]%} ✘ %{$reset_color%}"
+ZSH_THEME_SVN_PROMPT_CLEAN=" "
+# ZSH Theme - Preview: http://gyazo.com/8becc8a7ed5ab54a0262a470555c3eed.png
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+
+if [[ $UID -eq 0 ]]; then
+    local user_host='%{$terminfo[bold]$fg[red]%}%n@%m%{$reset_color%}'
+    local user_symbol='#'
+else
+    local user_host='%{$terminfo[bold]$fg[green]%}%n@%m%{$reset_color%}'
+    local user_symbol='$'
+fi
+
+local current_dir='%{$terminfo[bold]$fg[blue]%}%~%{$reset_color%}'
+local rvm_ruby=''
+if which rvm-prompt &> /dev/null; then
+  rvm_ruby='%{$fg[red]%}‹$(rvm-prompt i v g)›%{$reset_color%}'
+else
+  if which rbenv &> /dev/null; then
+    rvm_ruby='%{$fg[red]%}‹$(rbenv version | sed -e "s/ (set.*$//")›%{$reset_color%}'
+  fi
+fi
+local git_branch='$(git_prompt_info)%{$reset_color%}'
+
+PROMPT="╭─${user_host} ${current_dir} ${rvm_ruby} ${git_branch}
+╰─%B${user_symbol}%b "
+RPS1="%B${return_code}%b"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+
+# https://github.com/blinks zsh theme
+
+function _prompt_char() {
+  if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    echo "%{%F{blue}%}±%{%f%k%b%}"
+  else
+    echo ' '
+  fi
+}
+
+# This theme works with both the "dark" and "light" variants of the
+# Solarized color schema.  Set the SOLARIZED_THEME variable to one of
+# these two values to choose.  If you don't specify, we'll assume you're
+# using the "dark" variant.
+
+case ${SOLARIZED_THEME:-dark} in
+    light) bkg=white;;
+    *)     bkg=black;;
+esac
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" [%{%B%F{blue}%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{%f%k%b%K{${bkg}}%B%F{green}%}]"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{%F{red}%}*%{%f%k%b%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+PROMPT='%{%f%k%b%}
+%{%K{${bkg}}%B%F{green}%}%n%{%B%F{blue}%}@%{%B%F{cyan}%}%m%{%B%F{green}%} %{%b%F{yellow}%K{${bkg}}%}%~%{%B%F{green}%}$(git_prompt_info)%E%{%f%k%b%}
+%{%K{${bkg}}%}$(_prompt_char)%{%K{${bkg}}%} %#%{%f%k%b%} '
+
+RPROMPT='!%{%B%F{cyan}%}%!%{%f%k%b%}'
+# oh-my-zsh Bureau Theme
+
+### NVM
+
+ZSH_THEME_NVM_PROMPT_PREFIX="%B⬡%b "
+ZSH_THEME_NVM_PROMPT_SUFFIX=""
+
+### Git [±master ▾●]
+
+ZSH_THEME_GIT_PROMPT_PREFIX="[%{$fg_bold[green]%}±%{$reset_color%}%{$fg_bold[white]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}]"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✓%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$fg[cyan]%}▴%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_BEHIND="%{$fg[magenta]%}▾%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$fg_bold[green]%}●%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$fg_bold[yellow]%}●%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg_bold[red]%}●%{$reset_color%}"
+
+bureau_git_branch () {
+  ref=$(command git symbolic-ref HEAD 2> /dev/null) || \
+  ref=$(command git rev-parse --short HEAD 2> /dev/null) || return
+  echo "${ref#refs/heads/}"
+}
+
+bureau_git_status() {
+  _STATUS=""
+
+  # check status of files
+  _INDEX=$(command git status --porcelain 2> /dev/null)
+  if [[ -n "$_INDEX" ]]; then
+    if $(echo "$_INDEX" | command grep -q '^[AMRD]. '); then
+      _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_STAGED"
+    fi
+    if $(echo "$_INDEX" | command grep -q '^.[MTD] '); then
+      _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_UNSTAGED"
+    fi
+    if $(echo "$_INDEX" | command grep -q -E '^\?\? '); then
+      _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_UNTRACKED"
+    fi
+    if $(echo "$_INDEX" | command grep -q '^UU '); then
+      _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_UNMERGED"
+    fi
+  else
+    _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_CLEAN"
+  fi
+
+  # check status of local repository
+  _INDEX=$(command git status --porcelain -b 2> /dev/null)
+  if $(echo "$_INDEX" | command grep -q '^## .*ahead'); then
+    _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_AHEAD"
+  fi
+  if $(echo "$_INDEX" | command grep -q '^## .*behind'); then
+    _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_BEHIND"
+  fi
+  if $(echo "$_INDEX" | command grep -q '^## .*diverged'); then
+    _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_DIVERGED"
+  fi
+
+  if $(command git rev-parse --verify refs/stash &> /dev/null); then
+    _STATUS="$_STATUS$ZSH_THEME_GIT_PROMPT_STASHED"
+  fi
+
+  echo $_STATUS
+}
+
+bureau_git_prompt () {
+  local _branch=$(bureau_git_branch)
+  local _status=$(bureau_git_status)
+  local _result=""
+  if [[ "${_branch}x" != "x" ]]; then
+    _result="$ZSH_THEME_GIT_PROMPT_PREFIX$_branch"
+    if [[ "${_status}x" != "x" ]]; then
+      _result="$_result $_status"
+    fi
+    _result="$_result$ZSH_THEME_GIT_PROMPT_SUFFIX"
+  fi
+  echo $_result
+}
+
+
+_PATH="%{$fg_bold[white]%}%~%{$reset_color%}"
+
+if [[ $EUID -eq 0 ]]; then
+  _USERNAME="%{$fg_bold[red]%}%n"
+  _LIBERTY="%{$fg[red]%}#"
+else
+  _USERNAME="%{$fg_bold[white]%}%n"
+  _LIBERTY="%{$fg[green]%}$"
+fi
+_USERNAME="$_USERNAME%{$reset_color%}@%m"
+_LIBERTY="$_LIBERTY%{$reset_color%}"
+
+
+get_space () {
+  local STR=$1$2
+  local zero='%([BSUbfksu]|([FB]|){*})'
+  local LENGTH=${#${(S%%)STR//$~zero/}}
+  local SPACES=""
+  (( LENGTH = ${COLUMNS} - $LENGTH - 1))
+
+  for i in {0..$LENGTH}
+    do
+      SPACES="$SPACES "
+    done
+
+  echo $SPACES
+}
+
+_1LEFT="$_USERNAME $_PATH"
+_1RIGHT="[%*] "
+
+bureau_precmd () {
+  _1SPACES=`get_space $_1LEFT $_1RIGHT`
+  print
+  print -rP "$_1LEFT$_1SPACES$_1RIGHT"
+}
+
+setopt prompt_subst
+PROMPT='> $_LIBERTY '
+RPROMPT='$(nvm_prompt_info) $(bureau_git_prompt)'
+
+autoload -U add-zsh-hook
+add-zsh-hook precmd bureau_precmd
+# neuralsanwich.zsh-theme
+
+if [ "x$OH_MY_ZSH_HG" = "x" ]; then
+    OH_MY_ZSH_HG="hg"
+fi
+
+function hg_prompt_info {
+    $OH_MY_ZSH_HG prompt --angle-brackets "\
+< on %{$fg[magenta]%}<branch>%{$reset_color%}>\
+< at %{$fg[yellow]%}<tags|%{$reset_color%}, %{$fg[yellow]%}>%{$reset_color%}>\
+%{$fg[green]%}<status|modified|unknown><update>%{$reset_color%}<
+patches: <patches|join( → )|pre_applied(%{$fg[yellow]%})|post_applied(%{$reset_color%})|pre_unapplied(%{$fg_bold[black]%})|post_unapplied(%{$reset_color%})>>" 2>/dev/null
+}
+
+function box_name {
+    [ -f ~/.box-name ] && cat ~/.box-name || echo ${SHORT_HOST:-$HOST}
+}
+
+PROMPT='
+%{$fg[magenta]%}%n%{$reset_color%}@%{$fg[yellow]%}$(box_name)%{$reset_color%}:%{$fg_bold[green]%}${PWD/#$HOME/~}%{$reset_color%}$(hg_prompt_info)$(git_prompt_info)
+%(?,,%{${fg_bold[white]}%}[%?]%{$reset_color%} )$ '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" (%{$fg[magenta]%}branch: "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[red]%}?"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[orange]%}!"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%})"
+
+local return_status="%{$fg[red]%}%(?..✘)%{$reset_color%}"
+RPROMPT='${return_status}$(battery_time_remaining) $(battery_pct_prompt)%{$reset_color%}'
+PROMPT=$'%{$fg_bold[green]%}%n@%m %{$fg[blue]%}%D{[%X]} %{$reset_color%}%{$fg[white]%}[%~]%{$reset_color%} $(git_prompt_info)\
+%{$fg[blue]%}->%{$fg_bold[blue]%} %#%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}*%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="white"; fi
+
+PROMPT='%{$fg[$NCOLOR]%}%B%n%b%{$reset_color%}:%{$fg[blue]%}%B%c/%b%{$reset_color%} $(git_prompt_info)%(!.#.$) '
+RPROMPT='[%*]'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}(%{$fg_no_bold[yellow]%}%B"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%b%{$fg_bold[blue]%})%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%}✗"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="Gxfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:'
+if [[ -z $ZSH_THEME_CLOUD_PREFIX ]]; then
+    ZSH_THEME_CLOUD_PREFIX='☁'
+fi
+
+PROMPT='%{$fg_bold[cyan]%}$ZSH_THEME_CLOUD_PREFIX %{$fg_bold[green]%}%p %{$fg[green]%}%c %{$fg_bold[cyan]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}[%{$fg[cyan]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%}] %{$fg[yellow]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%}]"PROMPT=$'
+%{$fg_bold[green]%}%n@%m %{$fg[blue]%}%D{[%I:%M:%S]} %{$reset_color%}%{$fg[white]%}[%~]%{$reset_color%} $(git_prompt_info)\
+%{$fg[blue]%}->%{$fg_bold[blue]%} %#%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}*%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+# CRUNCH - created from Steve Eley's cat waxing.
+# Initially hacked from the Dallas theme. Thanks, Dallas Reedy.
+#
+# This theme assumes you do most of your oh-my-zsh'ed "colorful" work at a single machine, 
+# and eschews the standard space-consuming user and hostname info.  Instead, only the 
+# things that vary in my own workflow are shown:
+#
+# * The time (not the date)
+# * The RVM version and gemset (omitting the 'ruby' name if it's MRI)
+# * The current directory
+# * The Git branch and its 'dirty' state
+# 
+# Colors are at the top so you can mess with those separately if you like.
+# For the most part I stuck with Dallas's.
+
+CRUNCH_BRACKET_COLOR="%{$fg[white]%}"
+CRUNCH_TIME_COLOR="%{$fg[yellow]%}"
+CRUNCH_RVM_COLOR="%{$fg[magenta]%}"
+CRUNCH_DIR_COLOR="%{$fg[cyan]%}"
+CRUNCH_GIT_BRANCH_COLOR="%{$fg[green]%}"
+CRUNCH_GIT_CLEAN_COLOR="%{$fg[green]%}"
+CRUNCH_GIT_DIRTY_COLOR="%{$fg[red]%}"
+
+# These Git variables are used by the oh-my-zsh git_prompt_info helper:
+ZSH_THEME_GIT_PROMPT_PREFIX="$CRUNCH_BRACKET_COLOR:$CRUNCH_GIT_BRANCH_COLOR"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_CLEAN=" $CRUNCH_GIT_CLEAN_COLOR✓"
+ZSH_THEME_GIT_PROMPT_DIRTY=" $CRUNCH_GIT_DIRTY_COLOR✗"
+
+# Our elements:
+CRUNCH_TIME_="$CRUNCH_BRACKET_COLOR{$CRUNCH_TIME_COLOR%T$CRUNCH_BRACKET_COLOR}%{$reset_color%}"
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+  CRUNCH_RVM_="$CRUNCH_BRACKET_COLOR"["$CRUNCH_RVM_COLOR\${\$(~/.rvm/bin/rvm-prompt i v g)#ruby-}$CRUNCH_BRACKET_COLOR"]"%{$reset_color%}"
+else
+  if which rbenv &> /dev/null; then
+    CRUNCH_RVM_="$CRUNCH_BRACKET_COLOR"["$CRUNCH_RVM_COLOR\${\$(rbenv version | sed -e 's/ (set.*$//' -e 's/^ruby-//')}$CRUNCH_BRACKET_COLOR"]"%{$reset_color%}"
+  fi
+fi
+CRUNCH_DIR_="$CRUNCH_DIR_COLOR%~\$(git_prompt_info) "
+CRUNCH_PROMPT="$CRUNCH_BRACKET_COLOR➭ "
+
+# Put it all together!
+PROMPT="$CRUNCH_TIME_$CRUNCH_RVM_$CRUNCH_DIR_$CRUNCH_PROMPT%{$reset_color%}"
+# Based on evan's prompt
+# Shows the exit status of the last command if non-zero
+# Uses "#" instead of "»" when running with elevated privileges
+PROMPT="%m %{${fg_bold[red]}%}:: %{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )%{${fg[blue]}%}»%{${reset_color}%} "
+# Personalized!
+
+# Grab the current date (%D) and time (%T) wrapped in {}: {%D %T}
+DALLAS_CURRENT_TIME_="%{$fg[white]%}{%{$fg[yellow]%}%D %T%{$fg[white]%}}%{$reset_color%}"
+# Grab the current version of ruby in use (via RVM): [ruby-1.8.7]
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+  DALLAS_CURRENT_RUBY_="%{$fg[white]%}[%{$fg[magenta]%}\$(~/.rvm/bin/rvm-prompt i v)%{$fg[white]%}]%{$reset_color%}"
+else
+  if which rbenv &> /dev/null; then
+    DALLAS_CURRENT_RUBY_="%{$fg[white]%}[%{$fg[magenta]%}\$(rbenv version | sed -e 's/ (set.*$//')%{$fg[white]%}]%{$reset_color%}"
+  fi
+fi
+# Grab the current machine name: muscato
+DALLAS_CURRENT_MACH_="%{$fg[green]%}%m%{$fg[white]%}:%{$reset_color%}"
+# Grab the current filepath, use shortcuts: ~/Desktop
+# Append the current git branch, if in a git repository: ~aw@master
+DALLAS_CURRENT_LOCA_="%{$fg[cyan]%}%~\$(git_prompt_info)%{$reset_color%}\$(parse_git_dirty)"
+# Grab the current username: dallas
+DALLAS_CURRENT_USER_="%{$fg[red]%}%n%{$reset_color%}"
+# Use a % for normal users and a # for privelaged (root) users.
+DALLAS_PROMPT_CHAR_="%{$fg[white]%}%(!.#.%%)%{$reset_color%}"
+# For the git prompt, use a white @ and blue text for the branch name
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[white]%}@%{$fg[blue]%}"
+# Close it all off by resetting the color and styles.
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+# Do nothing if the branch is clean (no changes).
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+# Add 3 cyan ✗s if this branch is diiirrrty! Dirty branch!
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[cyan]%}✗✗✗"
+
+# Put it all together!
+PROMPT="$DALLAS_CURRENT_TIME_$DALLAS_CURRENT_RUBY_$DALLAS_CURRENT_MACH_$DALLAS_CURRENT_LOCA_ $DALLAS_CURRENT_USER_$DALLAS_PROMPT_CHAR_ "
+# meh. Dark Blood Rewind, a new beginning.
+
+PROMPT=$'%{$fg[red]%}┌[%{$fg_bold[white]%}%n%{$reset_color%}%{$fg[red]%}@%{$fg_bold[white]%}%m%{$reset_color%}%{$fg[red]%}] [%{$fg_bold[white]%}/dev/%y%{$reset_color%}%{$fg[red]%}] %{$(git_prompt_info)%}%(?,,%{$fg[red]%}[%{$fg_bold[white]%}%?%{$reset_color%}%{$fg[red]%}])
+%{$fg[red]%}└[%{$fg_bold[white]%}%~%{$reset_color%}%{$fg[red]%}]>%{$reset_color%} '
+PS2=$' %{$fg[red]%}|>%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[red]%}[%{$fg_bold[white]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}%{$fg[red]%}] "
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}⚡%{$reset_color%}"
+# Copied and modified from the oh-my-zsh theme from geoffgarside
+# Red server name, green cwd, blue git status
+
+PROMPT='%{$fg[red]%}%m%{$reset_color%}:%{$fg[green]%}%c%{$reset_color%}$(git_prompt_info) %(!.#.$) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[blue]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+# the idea of this theme is to contain a lot of info in a small string, by
+# compressing some parts and colorcoding, which bring useful visual cues,
+# while limiting the amount of colors and such to keep it easy on the eyes.
+# When a command exited >0, the timestamp will be in red and the exit code
+# will be on the right edge.
+# The exit code visual cues will only display once.
+# (i.e. they will be reset, even if you hit enter a few times on empty command prompts)
+
+typeset -A host_repr
+
+# translate hostnames into shortened, colorcoded strings
+host_repr=('dieter-ws-a7n8x-arch' "%{$fg_bold[green]%}ws" 'dieter-p4sci-arch' "%{$fg_bold[blue]%}p4")
+
+# local time, color coded by last return code
+time_enabled="%(?.%{$fg[green]%}.%{$fg[red]%})%*%{$reset_color%}"
+time_disabled="%{$fg[green]%}%*%{$reset_color%}"
+time=$time_enabled
+
+# user part, color coded by privileges
+local user="%(!.%{$fg[blue]%}.%{$fg[blue]%})%n%{$reset_color%}"
+
+# Hostname part.  compressed and colorcoded per host_repr array
+# if not found, regular hostname in default color
+local host="@${host_repr[$HOST]:-$HOST}%{$reset_color%}"
+
+# Compacted $PWD
+local pwd="%{$fg[blue]%}%c%{$reset_color%}"
+
+PROMPT='${time} ${user}${host} ${pwd} $(git_prompt_info)'
+
+# i would prefer 1 icon that shows the "most drastic" deviation from HEAD,
+# but lets see how this works out
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%} %{$fg[yellow]%}?%{$fg[green]%}%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%}"
+
+# elaborate exitcode on the right when >0
+return_code_enabled="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+return_code_disabled=
+return_code=$return_code_enabled
+
+RPS1='${return_code}'
+
+function accept-line-or-clear-warning () {
+	if [[ -z $BUFFER ]]; then
+		time=$time_disabled
+		return_code=$return_code_disabled
+	else
+		time=$time_enabled
+		return_code=$return_code_enabled
+	fi
+	zle accept-line
+}
+zle -N accept-line-or-clear-warning
+bindkey '^M' accept-line-or-clear-warning
+# dogenpunk.zsh-theme
+
+MODE_INDICATOR="%{$fg_bold[red]%}❮%{$reset_color%}%{$fg[red]%}❮❮%{$reset_color%}"
+local return_status="%{$fg[red]%}%(?..⏎)%{$reset_color%}"
+
+PROMPT='%{$fg[blue]%}%m%{$reset_color%}%{$fg_bold[white]%} ॐ  %{$reset_color%}%{$fg[cyan]%}%~:%{$reset_color%}$(git_time_since_commit)$(git_prompt_info)
+%{$fg[red]%}%!%{$reset_color%} $(prompt_char) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[green]%}git%{$reset_color%}@%{$bg[white]%}%{$fg[black]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%})"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}!%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+RPROMPT='${return_status}$(git_prompt_status)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+
+function prompt_char() {
+  git branch >/dev/null 2>/dev/null && echo "%{$fg[green]%}±%{$reset_color%}" && return
+  hg root >/dev/null 2>/dev/null && echo "%{$fg_bold[red]%}☿%{$reset_color%}" && return
+  echo "%{$fg[cyan]%}◯ %{$reset_color%}"
+}
+
+# Colors vary depending on time lapsed.
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$fg[green]%}"
+ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$fg[yellow]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$fg[red]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$fg[cyan]%}"
+
+# Determine the time since last commit. If branch is clean,
+# use a neutral color, otherwise colors will vary according to time.
+function git_time_since_commit() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        # Only proceed if there is actually a commit.
+        if git log -n 1  > /dev/null 2>&1; then
+            # Get the last commit.
+            last_commit=`git log --pretty=format:'%at' -1 2> /dev/null`
+            now=`date +%s`
+            seconds_since_last_commit=$((now-last_commit))
+
+            # Totals
+            MINUTES=$((seconds_since_last_commit / 60))
+            HOURS=$((seconds_since_last_commit/3600))
+
+            # Sub-hours and sub-minutes
+            DAYS=$((seconds_since_last_commit / 86400))
+            SUB_HOURS=$((HOURS % 24))
+            SUB_MINUTES=$((MINUTES % 60))
+
+            if [[ -n $(git status -s 2> /dev/null) ]]; then
+                if [ "$MINUTES" -gt 30 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG"
+                elif [ "$MINUTES" -gt 10 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM"
+                else
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT"
+                fi
+            else
+                COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            fi
+
+            if [ "$HOURS" -gt 24 ]; then
+                echo "($COLOR${DAYS}d${SUB_HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            elif [ "$MINUTES" -gt 60 ]; then
+                echo "($COLOR${HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            else
+                echo "($COLOR${MINUTES}m%{$reset_color%}|"
+            fi
+        else
+            COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            echo "($COLOR~|"
+        fi
+    fi
+}
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="green"; fi
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%{$fg[$NCOLOR]%}%n%{$reset_color%}@%{$fg[cyan]%}%m\
+%{$reset_color%}:%{$fg[magenta]%}%~\
+$(git_prompt_info) \
+%{$fg[red]%}%(!.#.»)%{$reset_color%} '
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+RPS1='${return_code}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%}○%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$fg[yellow]%})%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}!"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+function prompt_char {
+	if [ $UID -eq 0 ]; then echo "%{$fg[red]%}#%{$reset_color%}"; else echo $; fi
+}
+
+PROMPT='%(?, ,%{$fg[red]%}FAIL%{$reset_color%}
+)
+%{$fg[magenta]%}%n%{$reset_color%}@%{$fg[yellow]%}%m%{$reset_color%}: %{$fg_bold[blue]%}%~%{$reset_color%}$(git_prompt_info)
+%_ $(prompt_char) '
+
+RPROMPT='%{$fg[green]%}[%*]%{$reset_color%}'
+function prompt_char {
+    git branch >/dev/null 2>/dev/null && echo '±' && return
+    hg root >/dev/null 2>/dev/null && echo 'Hg' && return
+    echo '○'
+}
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
+}
+
+PROMPT='
+%{$fg[magenta]%}%n%{$reset_color%} at %{$fg[yellow]%}%m%{$reset_color%} in %{$fg_bold[green]%}${PWD/#$HOME/~}%{$reset_color%}$(git_prompt_info)
+$(virtualenv_info)$(prompt_char) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[magenta]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%}!"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[green]%}?"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+PROMPT=$'%{\e[0;34m%}%B┌─[%b%{\e[0m%}%{\e[1;32m%}%n%{\e[1;34m%}@%{\e[0m%}%{\e[0;36m%}%m%{\e[0;34m%}%B]%b%{\e[0m%} - %b%{\e[0;34m%}%B[%b%{\e[1;37m%}%~%{\e[0;34m%}%B]%b%{\e[0m%} - %{\e[0;34m%}%B[%b%{\e[0;33m%}%!%{\e[0;34m%}%B]%b%{\e[0m%}
+%{\e[0;34m%}%B└─%B[%{\e[1;35m%}$%{\e[0;34m%}%B]%{\e[0m%}%b '
+RPROMPT='[%*]'
+PS2=$' \e[0;34m%}%B>%{\e[0m%}%b '
+# RVM settings
+if [[ -s ~/.rvm/scripts/rvm ]] ; then 
+  RPS1="%{$fg[yellow]%}rvm:%{$reset_color%}%{$fg[red]%}\$(~/.rvm/bin/rvm-prompt)%{$reset_color%} $EPS1"
+else
+  if which rbenv &> /dev/null; then
+    RPS1="%{$fg[yellow]%}rbenv:%{$reset_color%}%{$fg[red]%}\$(rbenv version | sed -e 's/ (set.*$//')%{$reset_color%} $EPS1"
+  fi
+fi
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[green]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+# Customized git status, oh-my-zsh currently does not allow render dirty status before branch
+git_custom_status() {
+  local cb=$(git_current_branch)
+  if [ -n "$cb" ]; then
+    echo "$(parse_git_dirty)$ZSH_THEME_GIT_PROMPT_PREFIX$(git_current_branch)$ZSH_THEME_GIT_PROMPT_SUFFIX"
+  fi
+}
+
+PROMPT='$(git_custom_status)%{$fg[cyan]%}[%~% ]%{$reset_color%}%B$%b '
+PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg_bold[white]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+#!/usr/bin/env zsh
+# ------------------------------------------------------------------------------
+#          FILE: emotty.zsh-theme
+#   DESCRIPTION: A varying emoji based theme
+#        AUTHOR: Alexis Hildebrandt (afh[at]surryhill.net)
+#       VERSION: 1.0.0
+#       DEPENDS: emotty plugin
+#    RECOMMENDS: Hasklig font
+#
+# This theme shows a different emoji for each tty at the main prompt.
+#
+# There are pre-defined different emoji sets to choose from, e.g.:
+# emoji, stellar, floral, zodiac, love (see emotty plugin).
+# 
+# To choose a different emotty set than the default (emoji)
+# % export emotty_set=nature
+#
+# For the superuser (root) this theme shows a designated indicator
+# and switches the foreground color to red
+# (see root_prompt variable, default: skull).
+# But you are using sudo (8) instead of designated a root shell, right‽
+#
+# When logged in via SSH the main prompt also shows the user- and hostname.
+#
+# The exit status of the last failed command is displayed in the window title
+# along with an indicator (see warn_glyph variable, default: collision symbol).
+# To clear it just run: $NULL, true or :
+#
+# The right prompt shows the current working directory (3 levels up) in cyan.
+#
+# When in a git repository the main prompt shows the current branch name
+# with a branch indicator in yellow
+# (see vcs_branch_glyph variable, default: Hasklig branch glyph).
+#
+# If there are modified files the prompt switches to red and shows an unstaged
+# indicator (see vcs_unstaged_glyph variable, default: circled letter M).
+#
+# If there are staged files the prompt switches to green and shows an staged
+# indicator (see vcs_staged_glyph variable, default: high voltage sign).
+#
+# In a git repository the right prompt shows the repository name in bold and
+# prepends the current working directory subpath within the repository.
+#
+# When git currently performs an action such as merge or rebase, the action is
+# displayed in red instead of the branch name and a special action indicator
+# is shown (see vcs_action_glyph variable, default: chevron).
+# ------------------------------------------------------------------------------
+
+user_prompt="$(emotty)"
+root_prompt="$emoji[skull]"
+warn_prompt="$emoji[collision_symbol]"
+
+vcs_unstaged_glyph="%{$emoji[circled_latin_capital_letter_m]$emoji2[emoji_style] %2G%}"
+vcs_staged_glyph="%{$emoji[high_voltage_sign] %2G%}"
+vcs_branch_glyph=$(print -P $'\Ue0a0') #  
+vcs_action_glyph=$(print -P $'\U276f') # ❯
+
+red="$FG[001]"
+yellow="$FG[003]"
+green="$FG[002]"
+cyan="$FG[014]"
+
+prompt_glyph="%{%(#.${root_prompt}.${user_prompt}) %2G%}"
+
+# Uncomment the next line if you also like to see the warn_prompt in the prompt on the right.
+#last_command_failed="%(?.. %F{red}%1{${warn_prompt} %1G%}%?%f)"
+
+
+setopt promptsubst
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+zstyle ':vcs_info:*' enable git #hg svn cvs
+zstyle ':vcs_info:*' get-revision false
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:git:*' unstagedstr "${red}${vcs_unstaged_glyph}"
+zstyle ':vcs_info:*' stagedstr "${green}${vcs_staged_glyph}"
+
+# %(K|F){color} set (back|fore)ground color
+# %(k|f) reset (back|fore)ground color
+zstyle ':vcs_info:*' max-exports 3
+zstyle ':vcs_info:*' nvcsformats "${prompt_glyph}" '%3~' ''
+zstyle ':vcs_info:*' formats "${yellow}%u%c%b${vcs_branch_glyph}%f" '%S|' "$FX[bold]%r$FX[no-bold]" 
+zstyle ':vcs_info:*' actionformats "${red}%K{white}%a${vcs_action_glyph}%k%f" '%S|' "$FX[bold]%r$FX[no-bold]"
+
+red_if_root="%(!.%F{red}.)"
+sshuser_on_host="${SSH_TTY:+%(!.$red.$yellow)%n@%m$reset_color}"
+
+PROMPT='${sshuser_on_host}${vcs_info_msg_0_}${red_if_root} '
+RPROMPT='${cyan}${vcs_info_msg_1_##.|}${vcs_info_msg_2_}%f${last_command_failed}'
+
+emotty_title() {
+  title "${${?/[^0]*/$warn_prompt $?}/0/${prompt_glyph}}"
+}
+add-zsh-hook precmd emotty_title
+add-zsh-hook precmd vcs_info
+
+# vim:ft=zsh ts=2 sw=2 sts=2
+# Theme with full path names and hostname
+# Handy if you work on different servers all the time;
+
+local return_code="%(?..%{$fg_bold[red]%}%? ↵%{$reset_color%})"
+
+function my_git_prompt_info() {
+	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+	GIT_STATUS=$(git_prompt_status)
+	[[ -n $GIT_STATUS ]] && GIT_STATUS=" $GIT_STATUS"
+	echo "$ZSH_THEME_GIT_PROMPT_PREFIX${ref#refs/heads/}$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+}
+
+# Colored prompt
+ZSH_THEME_COLOR_USER="green" 
+ZSH_THEME_COLOR_HOST="green" 
+ZSH_THEME_COLOR_PWD="yellow" 
+test -n "$SSH_CONNECTION" && ZSH_THEME_COLOR_USER="red" && ZSH_THEME_COLOR_HOST="red"
+test `id -u` = 0 && ZSH_THEME_COLOR_USER="magenta" && ZSH_THEME_COLOR_HOST="magenta"
+PROMPT='%{$fg_bold[$ZSH_THEME_COLOR_USER]%}%n@%{$fg_bold[$ZSH_THEME_COLOR_HOST]%}%M%{$reset_color%}:%{$fg_bold[$ZSH_THEME_COLOR_PWD]%}%~%{$reset_color%} $(my_git_prompt_info)%(!.#.$) '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[cyan]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=") %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%%"
+ZSH_THEME_GIT_PROMPT_ADDED="+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="*"
+ZSH_THEME_GIT_PROMPT_RENAMED="~"
+ZSH_THEME_GIT_PROMPT_DELETED="!"
+ZSH_THEME_GIT_PROMPT_UNMERGED="?"
+
+# Evan describes this sexy prompt as: "a skinny, topless prompt"
+PROMPT='%m :: %2~ %B»%b '# Found on the ZshWiki
+#  http://zshwiki.org/home/config/prompt
+#
+
+PROMPT="%{$fg[red]%}%n%{$reset_color%}@%{$fg[blue]%}%m %{$fg[yellow]%}%~ %{$reset_color%}%% "# fino-time.zsh-theme
+
+# Use with a dark background and 256-color terminal!
+# Meant for people with RVM and git. Tested only on OS X 10.7.
+
+# You can set your computer name in the ~/.box-name file if you want.
+
+# Borrowing shamelessly from these oh-my-zsh themes:
+#   bira
+#   robbyrussell
+#
+# Also borrowing from http://stevelosh.com/blog/2010/02/my-extravagant-zsh-prompt/
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
+}
+
+function prompt_char {
+    git branch >/dev/null 2>/dev/null && echo '⠠⠵' && return
+    echo '○'
+}
+
+function box_name {
+    [ -f ~/.box-name ] && cat ~/.box-name || echo ${SHORT_HOST:-$HOST}
+}
+
+
+local rvm_ruby='‹$(rvm-prompt i v g)›%{$reset_color%}'
+local current_dir='${PWD/#$HOME/~}'
+local git_info='$(git_prompt_info)'
+
+
+PROMPT="╭─%{$FG[040]%}%n%{$reset_color%} %{$FG[239]%}at%{$reset_color%} %{$FG[033]%}$(box_name)%{$reset_color%} %{$FG[239]%}in%{$reset_color%} %{$terminfo[bold]$FG[226]%}${current_dir}%{$reset_color%}${git_info} %{$FG[239]%}using%{$FG[243]%} ${rvm_ruby} %D - %*
+╰─$(virtualenv_info)$(prompt_char) "
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$FG[239]%}on%{$reset_color%} %{$fg[255]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$FG[202]%}✘✘✘"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$FG[040]%}✔"
+# fino.zsh-theme
+
+# Use with a dark background and 256-color terminal!
+# Meant for people with rbenv and git. Tested only on OS X 10.7.
+
+# You can set your computer name in the ~/.box-name file if you want.
+
+# Borrowing shamelessly from these oh-my-zsh themes:
+#   bira
+#   robbyrussell
+#
+# Also borrowing from http://stevelosh.com/blog/2010/02/my-extravagant-zsh-prompt/
+
+function prompt_char {
+  git branch >/dev/null 2>/dev/null && echo "±" && return
+  echo '○'
+}
+
+function box_name {
+    [ -f ~/.box-name ] && cat ~/.box-name || echo ${SHORT_HOST:-$HOST}
+}
+
+local ruby_env=''
+if which rvm-prompt &> /dev/null; then
+  ruby_env=' ‹$(rvm-prompt i v g)›%{$reset_color%}'
+else
+  if which rbenv &> /dev/null; then
+    ruby_env=' ‹$(rbenv version-name)›%{$reset_color%}'
+  fi
+fi
+
+local current_dir='${PWD/#$HOME/~}'
+local git_info='$(git_prompt_info)'
+local prompt_char='$(prompt_char)'
+
+
+PROMPT="╭─%{$FG[040]%}%n%{$reset_color%} %{$FG[239]%}at%{$reset_color%} %{$FG[033]%}$(box_name)%{$reset_color%} %{$FG[239]%}in%{$reset_color%} %{$terminfo[bold]$FG[226]%}${current_dir}%{$reset_color%}${git_info} %{$FG[239]%}using%{$FG[243]%}${ruby_env}
+╰─${prompt_char}%{$reset_color%} "
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$FG[239]%}on%{$reset_color%} %{$fg[255]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$FG[202]%}✘✘✘"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$FG[040]%}✔"
+# ZSH Theme emulating the Fish shell's default prompt.
+
+_fishy_collapsed_wd() {
+  echo $(pwd | perl -pe '
+   BEGIN {
+      binmode STDIN,  ":encoding(UTF-8)";
+      binmode STDOUT, ":encoding(UTF-8)";
+   }; s|^$ENV{HOME}|~|g; s|/([^/.])[^/]*(?=/)|/$1|g; s|/\.([^/])[^/]*(?=/)|/.$1|g
+')
+}
+
+local user_color='green'; [ $UID -eq 0 ] && user_color='red'
+PROMPT='%n@%m %{$fg[$user_color]%}$(_fishy_collapsed_wd)%{$reset_color%}%(!.#.>) '
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+
+local return_status="%{$fg_bold[red]%}%(?..%?)%{$reset_color%}"
+RPROMPT='${return_status}$(git_prompt_info)$(git_prompt_status)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" "
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg_bold[green]%}+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg_bold[blue]%}!"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg_bold[red]%}-"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg_bold[magenta]%}>"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg_bold[yellow]%}#"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg_bold[cyan]%}?"
+if [ "$USER" = "root" ]
+then CARETCOLOR="red"
+else CARETCOLOR="blue"
+fi
+
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%m%{${fg_bold[magenta]}%} :: %{$reset_color%}%{${fg[green]}%}%3~ $(git_prompt_info)%{${fg_bold[$CARETCOLOR]}%}%#%{${reset_color}%} '
+
+RPS1='$(vi_mode_prompt_info) ${return_code}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[cyan]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+
+MODE_INDICATOR="%{$fg_bold[magenta]%}<%{$reset_color%}%{$fg[magenta]%}<<%{$reset_color%}"
+
+# TODO use 265 colors
+#MODE_INDICATOR="$FX[bold]$FG[020]<$FX[no_bold]%{$fg[blue]%}<<%{$reset_color%}"
+# TODO use two lines if git
+# Copied from old version of tonotdo's theme. LSCOLORS modified.
+PROMPT='%{$fg_no_bold[cyan]%}%n%{$fg_no_bold[magenta]%}•%{$fg_no_bold[green]%}%3~$(git_prompt_info)%{$reset_color%}» '
+RPROMPT='[%*]'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}(%{$fg_no_bold[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[blue]%})"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[yellow]%}⚡%{$fg_bold[blue]%})"
+
+export LSCOLORS="exfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:'
+# fox.zsh-theme
+
+PROMPT='%{$fg[cyan]%}┌[%{$fg_bold[white]%}%n%{$reset_color%}%{$fg[cyan]%}☮%{$fg_bold[white]%}%M%{$reset_color%}%{$fg[cyan]%}]%{$fg[white]%}-%{$fg[cyan]%}(%{$fg_bold[white]%}%~%{$reset_color%}%{$fg[cyan]%})$(git_prompt_info)
+└> % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="-[%{$reset_color%}%{$fg[white]%}git://%{$fg_bold[white]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}%{$fg[cyan]%}]-"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$fg[green]%}✔%{$reset_color%}"
+PROMPT=$'
+%{$fg[blue]%}%/%{$reset_color%} $(git_prompt_info)$(bzr_prompt_info)%{$fg[white]%}[%n@%m]%{$reset_color%} %{$fg[white]%}[%T]%{$reset_color%}
+%{$fg_bold[black]%}>%{$reset_color%} '
+
+PROMPT2="%{$fg_blod[black]%}%_> %{$reset_color%}"
+
+GIT_CB="git::"
+ZSH_THEME_SCM_PROMPT_PREFIX="%{$fg[green]%}["
+ZSH_THEME_GIT_PROMPT_PREFIX=$ZSH_THEME_SCM_PROMPT_PREFIX$GIT_CB
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}*%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+local rvm="%{$fg[green]%}[$(rvm-prompt i v g)]%{$reset_color%}"
+
+PROMPT='
+%{$fg_bold[gray]%}%~%{$fg_bold[blue]%}%{$fg_bold[blue]%} % %{$reset_color%}
+%{$fg[green]%}➞  %{$reset_color%'
+
+RPROMPT='$(git_prompt_info) ${rvm}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}[git:"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}] %{$fg[red]%}✖ %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%}] %{$fg[green]%}✔%{$reset_color%}"
+# Taken from Tassilo's Blog
+# http://tsdh.wordpress.com/2007/12/06/my-funky-zsh-prompt/
+
+local blue_op="%{$fg[blue]%}[%{$reset_color%}"
+local blue_cp="%{$fg[blue]%}]%{$reset_color%}"
+local path_p="${blue_op}%~${blue_cp}"
+local user_host="${blue_op}%n@%m${blue_cp}"
+local ret_status="${blue_op}%?${blue_cp}"
+local hist_no="${blue_op}%h${blue_cp}"
+local smiley="%(?,%{$fg[green]%}:%)%{$reset_color%},%{$fg[red]%}:(%{$reset_color%})"
+PROMPT="╭─${path_p}─${user_host}─${ret_status}─${hist_no}
+╰─${blue_op}${smiley}${blue_cp} %# "
+local cur_cmd="${blue_op}%_${blue_cp}"
+PROMPT2="${cur_cmd}> "PROMPT='%{$fg_bold[green]%}%p %{$fg[cyan]%}%c%{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" (%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+# ZSH Theme - Preview: http://img.skitch.com/20091113-qqtd3j8xinysujg5ugrsbr7x1y.jpg
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%{$fg[green]%}%m%{$reset_color%} %2~ $(git_prompt_info)%{$reset_color%}%B»%b '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+# Depends on the git plugin for work_in_progress()
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[green]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+#Customized git status, oh-my-zsh currently does not allow render dirty status before branch
+git_custom_status() {
+  local cb=$(git_current_branch)
+  if [ -n "$cb" ]; then
+    echo "$(parse_git_dirty)%{$fg_bold[yellow]%}$(work_in_progress)%{$reset_color%}$ZSH_THEME_GIT_PROMPT_PREFIX$(git_current_branch)$ZSH_THEME_GIT_PROMPT_SUFFIX"
+  fi
+}
+
+# RVM component of prompt
+ZSH_THEME_RVM_PROMPT_PREFIX="%{$fg[red]%}["
+ZSH_THEME_RVM_PROMPT_SUFFIX="]%{$reset_color%}"
+
+# Combine it all into a final right-side prompt
+RPS1='$(git_custom_status)$(ruby_prompt_info) $EPS1'
+
+PROMPT='%{$fg[cyan]%}[%~% ]%(?.%{$fg[green]%}.%{$fg[red]%})%B$%b '
+PROMPT='%{$fg[cyan]%}%c%{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%}% %{$reset_color%}: '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="(%{$fg[blue]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[red]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+function prompt_char {
+	if [ $UID -eq 0 ]; then echo "#"; else echo $; fi
+}
+
+PROMPT='%(!.%{$fg_bold[red]%}.%{$fg_bold[green]%}%n@)%m %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)%_$(prompt_char)%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=") "
+# PROMPT="[%*] %n:%c $(git_prompt_info)%(!.#.$) "
+PROMPT='[%*] %{$fg[cyan]%}%n%{$reset_color%}:%{$fg[green]%}%c%{$reset_color%}$(git_prompt_info) %(!.#.$) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[yellow]%}git:("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+PROMPT='[%{$fg_bold[white]%}%n%{$reset_color%}@%{$fg_bold[red]%}%m%{$reset_color%} %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)%{$reset_color%}]$ '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="(%{$fg_bold[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%} %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$reset_color%}"
+# ZSH Theme - Preview: http://dl.dropbox.com/u/4109351/pics/gnzh-zsh-theme.png
+# Based on bira theme
+
+setopt prompt_subst
+
+() {
+
+local PR_USER PR_USER_OP PR_PROMPT PR_HOST
+
+# Check the UID
+if [[ $UID -ne 0 ]]; then # normal user
+  PR_USER='%F{green}%n%f'
+  PR_USER_OP='%F{green}%#%f'
+  PR_PROMPT='%f➤ %f'
+else # root
+  PR_USER='%F{red}%n%f'
+  PR_USER_OP='%F{red}%#%f'
+  PR_PROMPT='%F{red}➤ %f'
+fi
+
+# Check if we are on SSH or not
+if [[ -n "$SSH_CLIENT"  ||  -n "$SSH2_CLIENT" ]]; then
+  PR_HOST='%F{red}%M%f' # SSH
+else
+  PR_HOST='%F{green}%M%f' # no SSH
+fi
+
+
+local return_code="%(?..%F{red}%? ↵%f)"
+
+local user_host="${PR_USER}%F{cyan}@${PR_HOST}"
+local current_dir="%B%F{blue}%~%f%b"
+local rvm_ruby=''
+if ${HOME}/.rvm/bin/rvm-prompt &> /dev/null; then # detect user-local rvm installation
+  rvm_ruby='%F{red}‹$(${HOME}/.rvm/bin/rvm-prompt i v g s)›%f'
+elif which rvm-prompt &> /dev/null; then # detect system-wide rvm installation
+  rvm_ruby='%F{red}‹$(rvm-prompt i v g s)›%f'
+elif which rbenv &> /dev/null; then # detect Simple Ruby Version Management
+  rvm_ruby='%F{red}‹$(rbenv version | sed -e "s/ (set.*$//")›%f'
+fi
+local git_branch='$(git_prompt_info)'
+
+PROMPT="╭─${user_host} ${current_dir} ${rvm_ruby} ${git_branch}
+╰─$PR_PROMPT "
+RPROMPT="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%F{yellow}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %f"
+
+}
+PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[cyan]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+RPROMPT='$(git_prompt_status)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[cyan]%} ✈"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%} ✭"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✗"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%} ➦"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[magenta]%} ✂"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[grey]%} ✱"
+# prompt style and colors based on Steve Losh's Prose theme:
+# http://github.com/sjl/oh-my-zsh/blob/master/themes/prose.zsh-theme
+#
+# vcs_info modifications from Bart Trojanowski's zsh prompt:
+# http://www.jukie.net/bart/blog/pimping-out-zsh-prompt
+#
+# git untracked files modification from Brian Carper:
+# http://briancarper.net/blog/570/git-info-in-your-zsh-prompt
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('`basename $VIRTUAL_ENV`') '
+}
+PR_GIT_UPDATE=1
+
+setopt prompt_subst
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+#use extended color palette if available
+if [[ $TERM = *256color* || $TERM = *rxvt* ]]; then
+    turquoise="%F{81}"
+    orange="%F{166}"
+    purple="%F{135}"
+    hotpink="%F{161}"
+    limegreen="%F{118}"
+else
+    turquoise="$fg[cyan]"
+    orange="$fg[yellow]"
+    purple="$fg[magenta]"
+    hotpink="$fg[red]"
+    limegreen="$fg[green]"
+fi
+
+# enable VCS systems you use
+zstyle ':vcs_info:*' enable git svn
+
+# check-for-changes can be really slow.
+# you should disable it, if you work with large repositories
+zstyle ':vcs_info:*:prompt:*' check-for-changes true
+
+# set formats
+# %b - branchname
+# %u - unstagedstr (see below)
+# %c - stagedstr (see below)
+# %a - action (e.g. rebase-i)
+# %R - repository path
+# %S - path in the repository
+PR_RST="%{${reset_color}%}"
+FMT_BRANCH=" on %{$turquoise%}%b%u%c${PR_RST}"
+FMT_ACTION=" performing a %{$limegreen%}%a${PR_RST}"
+FMT_UNSTAGED="%{$orange%} ●"
+FMT_STAGED="%{$limegreen%} ●"
+
+zstyle ':vcs_info:*:prompt:*' unstagedstr   "${FMT_UNSTAGED}"
+zstyle ':vcs_info:*:prompt:*' stagedstr     "${FMT_STAGED}"
+zstyle ':vcs_info:*:prompt:*' actionformats "${FMT_BRANCH}${FMT_ACTION}"
+zstyle ':vcs_info:*:prompt:*' formats       "${FMT_BRANCH}"
+zstyle ':vcs_info:*:prompt:*' nvcsformats   ""
+
+
+function steeef_preexec {
+    case "$(history $HISTCMD)" in
+        *git*)
+            PR_GIT_UPDATE=1
+            ;;
+        *svn*)
+            PR_GIT_UPDATE=1
+            ;;
+    esac
+}
+add-zsh-hook preexec steeef_preexec
+
+function steeef_chpwd {
+    PR_GIT_UPDATE=1
+}
+add-zsh-hook chpwd steeef_chpwd
+
+function steeef_precmd {
+    if [[ -n "$PR_GIT_UPDATE" ]] ; then
+        # check for untracked files or updated submodules, since vcs_info doesn't
+        if [[ ! -z $(git ls-files --other --exclude-standard 2> /dev/null) ]]; then
+            PR_GIT_UPDATE=1
+            FMT_BRANCH="${PM_RST} on %{$turquoise%}%b%u%c%{$hotpink%} ●${PR_RST}"
+        else
+            FMT_BRANCH="${PM_RST} on %{$turquoise%}%b%u%c${PR_RST}"
+        fi
+        zstyle ':vcs_info:*:prompt:*' formats       "${FMT_BRANCH}"
+
+        vcs_info 'prompt'
+        PR_GIT_UPDATE=
+    fi
+}
+add-zsh-hook precmd steeef_precmd
+
+PROMPT=$'%{$purple%}%n%{$reset_color%} in %{$limegreen%}%~%{$reset_color%}$(ruby_prompt_info " with%{$fg[red]%} " v g "%{$reset_color%}")$vcs_info_msg_0_%{$orange%} λ%{$reset_color%} '
+# ZSH THEME Preview: https://skitch.com/huyy/rk979/humza.zshtheme
+
+let TotalBytes=0
+for Bytes in $(ls -l | grep "^-" | awk '{ print $5 }')
+do
+   let TotalBytes=$TotalBytes+$Bytes
+done
+		# should it say b, kb, Mb, or Gb
+if [ $TotalBytes -lt 1024 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes \nquit" | bc)
+   suffix="b"
+elif [ $TotalBytes -lt 1048576 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1024 \nquit" | bc)
+   suffix="kb"
+elif [ $TotalBytes -lt 1073741824 ]; then
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1048576 \nquit" | bc)
+   suffix="Mb"
+else
+   TotalSize=$(echo -e "scale=3 \n$TotalBytes/1073741824 \nquit" | bc)
+   suffix="Gb"
+fi
+
+PROMPT='%{$reset_color%}%n %{$fg[green]%}{%{$reset_color%}%~%{$fg[green]%}}%{$reset_color%}$(git_prompt_info) greetings, earthling %{$fg[green]%}[%{$reset_color%}%{$TotalSize%}%{$suffix%}%{$fg[green]%}]%{$fg[red]%}$%{$reset_color%} ☞ '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[red]%}±("
+ZSH_THEME_GIT_PROMPT_SUFFIX=");%{$reset_color%}"
+# Found on the ZshWiki
+#  http://zshwiki.org/home/config/prompt
+#
+
+PROMPT="%{$fg[red]%}%%%{$reset_color%} "# A multiline prompt with username, hostname, full path, return status, git branch, git dirty status, git remote status
+
+local return_status="%{$fg[red]%}%(?..⏎)%{$reset_color%}"
+
+local host_color="green"
+if [ -n "$SSH_CLIENT" ]; then
+  local host_color="red"
+fi
+
+PROMPT='
+%{$fg_bold[grey]%}[%{$reset_color%}%{$fg_bold[${host_color}]%}%n@%m%{$reset_color%}%{$fg_bold[grey]%}]%{$reset_color%} %{$fg_bold[blue]%}%10c%{$reset_color%} $(git_prompt_info) $(git_remote_status)
+%{$fg_bold[cyan]%}❯%{$reset_color%} '
+
+
+RPROMPT='${return_status}%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[grey]%}(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[grey]%}) %{$fg[yellow]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[grey]%})"
+ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE="%{$fg_bold[magenta]%}↓%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE="%{$fg_bold[magenta]%}↑%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE="%{$fg_bold[magenta]%}↕%{$reset_color%}"
+# Inspired by http://peepcode.com/blog/2012/my-command-line-prompt
+
+local smiley="%(?,%{$fg[green]%}☺%{$reset_color%},%{$fg[red]%}☹%{$reset_color%})"
+
+local user="%{$fg[cyan]%}%n%{$reset_color%}"
+local host="%{$fg[cyan]%}@%m%{$reset_color%}"
+local pwd="%{$fg[yellow]%}%~%{$reset_color%}"
+
+PROMPT='${user}${host} ${pwd}
+${smiley}  '
+
+RPROMPT='$(rvm-prompt || rbenv version) %{$fg[white]%}$(git_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%} ✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%} ✔%{$reset_color%}"
+
+# jaischeema.zsh-theme
+
+PROMPT='%{$fg_bold[magenta]%}%m%{$reset_color%} at %{$fg_bold[green]%}%~%{$reset_color%} %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%}% %{$reset_color%}%{$fg[red]%}❯%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="±(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%}) "
+
+if which rbenv &> /dev/null; then
+  RPROMPT='%{$fg[red]%}$(rbenv version | sed -e "s/ (set.*$//")%{$reset_color%}'
+else
+  if which rvm-prompt &> /dev/null; then
+    RPROMPT='%{$fg[red]%}$(rvm-prompt)%{$reset_color%}'
+  fi
+fi
+PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[cyan]%}%c %{$fg_bold[white]%}$(git_prompt_info)%{$fg_bold[white]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[white]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[white]%})"
+local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
+PROMPT=$'%{$fg[green]%}%n@%m: %{$reset_color%}%{$fg[blue]%}%/ %{$reset_color%}%{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}
+${ret_status} %{$reset_color%} '
+
+PROMPT2="%{$fg_blod[black]%}%_> %{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+zstyle ':vcs_info:*' actionformats \
+       '%F{5}(%f%s%F{5})%F{3}-%F{5}[%F{2}%b%F{3}|%F{1}%a%F{5}]%f '
+zstyle ':vcs_info:*' formats '%F{2}%s%F{7}:%F{2}(%F{1}%b%F{2})%f '
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{3}%r'
+zstyle ':vcs_info:*' enable git
+
+add-zsh-hook precmd prompt_vcs
+
+prompt_vcs () {
+    vcs_info
+
+    if [ "${vcs_info_msg_0_}" = "" ]; then
+        dir_status="%F{2}→%f"
+    elif [[ $(git diff --cached --name-status 2>/dev/null ) != "" ]]; then
+        dir_status="%F{1}▶%f"
+    elif [[ $(git diff --name-status 2>/dev/null ) != "" ]]; then
+        dir_status="%F{3}▶%f"
+    else
+        dir_status="%F{2}▶%f"
+    fi
+}
+
+function {
+    if [[ -n "$SSH_CLIENT" ]]; then
+        PROMPT_HOST=" ($HOST)"
+    else
+        PROMPT_HOST=''
+    fi
+}
+
+local ret_status="%(?:%{$fg_bold[green]%}Ξ:%{$fg_bold[red]%}%S↑%s%?)"
+
+PROMPT='${ret_status}%{$fg[blue]%}${PROMPT_HOST}%{$fg_bold[green]%}%p %{$fg_bold[yellow]%}%2~ ${vcs_info_msg_0_}${dir_status}%{$reset_color%} '
+
+#  vim: set ft=zsh ts=4 sw=4 et:
+functions rbenv_prompt_info >& /dev/null || rbenv_prompt_info(){}
+
+function theme_precmd {
+    local TERMWIDTH
+    (( TERMWIDTH = ${COLUMNS} - 1 ))
+
+
+    ###
+    # Truncate the path if it's too long.
+
+    PR_FILLBAR=""
+    PR_PWDLEN=""
+
+    local promptsize=${#${(%):---(%n@%m:%l)---()--}}
+    local rubyprompt=`rvm_prompt_info || rbenv_prompt_info`
+    local rubypromptsize=${#${rubyprompt}}
+    local pwdsize=${#${(%):-%~}}
+
+    if [[ "$promptsize + $rubypromptsize + $pwdsize" -gt $TERMWIDTH ]]; then
+      ((PR_PWDLEN=$TERMWIDTH - $promptsize))
+    else
+      PR_FILLBAR="\${(l.(($TERMWIDTH - ($promptsize + $rubypromptsize + $pwdsize)))..${PR_HBAR}.)}"
+    fi
+
+}
+
+
+setopt extended_glob
+theme_preexec () {
+    if [[ "$TERM" == "screen" ]]; then
+	local CMD=${1[(wr)^(*=*|sudo|-*)]}
+	echo -n "\ek$CMD\e\\"
+    fi
+}
+
+
+setprompt () {
+    ###
+    # Need this so the prompt will work.
+
+    setopt prompt_subst
+
+
+    ###
+    # See if we can use colors.
+
+    autoload zsh/terminfo
+    for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE GREY; do
+	eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
+	eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
+	(( count = $count + 1 ))
+    done
+    PR_NO_COLOUR="%{$terminfo[sgr0]%}"
+
+    ###
+    # Modify Git prompt
+    ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[green]%}"
+    ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+    ZSH_THEME_GIT_PROMPT_DIRTY=""
+    ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+    ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+    ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+    ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+    ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+    ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+    ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+
+    ###
+    # See if we can use extended characters to look nicer.
+    # UTF-8 Fixed
+
+    if [[ $(locale charmap) == "UTF-8" ]]; then
+	PR_SET_CHARSET=""
+	PR_SHIFT_IN=""
+	PR_SHIFT_OUT=""
+	PR_HBAR="─"
+        PR_ULCORNER="┌"
+        PR_LLCORNER="└"
+        PR_LRCORNER="┘"
+        PR_URCORNER="┐"
+    else
+        typeset -A altchar
+        set -A altchar ${(s..)terminfo[acsc]}
+        # Some stuff to help us draw nice lines
+        PR_SET_CHARSET="%{$terminfo[enacs]%}"
+        PR_SHIFT_IN="%{$terminfo[smacs]%}"
+        PR_SHIFT_OUT="%{$terminfo[rmacs]%}"
+        PR_HBAR='$PR_SHIFT_IN${altchar[q]:--}$PR_SHIFT_OUT'
+        PR_ULCORNER='$PR_SHIFT_IN${altchar[l]:--}$PR_SHIFT_OUT'
+        PR_LLCORNER='$PR_SHIFT_IN${altchar[m]:--}$PR_SHIFT_OUT'
+        PR_LRCORNER='$PR_SHIFT_IN${altchar[j]:--}$PR_SHIFT_OUT'
+        PR_URCORNER='$PR_SHIFT_IN${altchar[k]:--}$PR_SHIFT_OUT'
+     fi
+
+
+    ###
+    # Decide if we need to set titlebar text.
+
+    case $TERM in
+	xterm*)
+	    PR_TITLEBAR=$'%{\e]0;%(!.-=*[ROOT]*=- | .)%n@%m:%~ | ${COLUMNS}x${LINES} | %y\a%}'
+	    ;;
+	screen)
+	    PR_TITLEBAR=$'%{\e_screen \005 (\005t) | %(!.-=[ROOT]=- | .)%n@%m:%~ | ${COLUMNS}x${LINES} | %y\e\\%}'
+	    ;;
+	*)
+	    PR_TITLEBAR=''
+	    ;;
+    esac
+
+
+    ###
+    # Decide whether to set a screen title
+    if [[ "$TERM" == "screen" ]]; then
+	PR_STITLE=$'%{\ekzsh\e\\%}'
+    else
+	PR_STITLE=''
+    fi
+
+
+    ###
+    # Finally, the prompt.
+
+    PROMPT='$PR_SET_CHARSET$PR_STITLE${(e)PR_TITLEBAR}\
+$PR_CYAN$PR_ULCORNER$PR_HBAR$PR_GREY(\
+$PR_GREEN%$PR_PWDLEN<...<%~%<<\
+$PR_GREY)`rvm_prompt_info || rbenv_prompt_info`$PR_CYAN$PR_HBAR$PR_HBAR${(e)PR_FILLBAR}$PR_HBAR$PR_GREY(\
+$PR_CYAN%(!.%SROOT%s.%n)$PR_GREY@$PR_GREEN%m:%l\
+$PR_GREY)$PR_CYAN$PR_HBAR$PR_URCORNER\
+
+$PR_CYAN$PR_LLCORNER$PR_BLUE$PR_HBAR(\
+$PR_YELLOW%D{%H:%M:%S}\
+$PR_LIGHT_BLUE%{$reset_color%}`git_prompt_info``git_prompt_status`$PR_BLUE)$PR_CYAN$PR_HBAR\
+$PR_HBAR\
+>$PR_NO_COLOUR '
+
+    # display exitcode on the right when >0
+    return_code="%(?..%{$fg[red]%}%? ↵ %{$reset_color%})"
+    RPROMPT=' $return_code$PR_CYAN$PR_HBAR$PR_BLUE$PR_HBAR\
+($PR_YELLOW%D{%a,%b%d}$PR_BLUE)$PR_HBAR$PR_CYAN$PR_LRCORNER$PR_NO_COLOUR'
+
+    PS2='$PR_CYAN$PR_HBAR\
+$PR_BLUE$PR_HBAR(\
+$PR_LIGHT_GREEN%_$PR_BLUE)$PR_HBAR\
+$PR_CYAN$PR_HBAR$PR_NO_COLOUR '
+}
+
+setprompt
+
+autoload -U add-zsh-hook
+add-zsh-hook precmd  theme_precmd
+add-zsh-hook preexec theme_preexec
+grey='\e[0;90m'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$grey%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$grey%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$grey%})"
+
+function josh_prompt {
+  (( spare_width = ${COLUMNS} ))
+  prompt=" "
+
+  branch=$(git_current_branch)
+  ruby_version=$(rvm_prompt_info || rbenv_prompt_info)
+  path_size=${#PWD}
+  branch_size=${#branch}
+  ruby_size=${#ruby_version}
+  user_machine_size=${#${(%):-%n@%m-}}
+  
+  if [[ ${#branch} -eq 0 ]]
+    then (( ruby_size = ruby_size + 1 ))
+  else
+    (( branch_size = branch_size + 4 ))
+    if [[ -n $(git status -s 2> /dev/null) ]]; then
+      (( branch_size = branch_size + 2 ))
+    fi
+  fi
+  
+  (( spare_width = ${spare_width} - (${user_machine_size} + ${path_size} + ${branch_size} + ${ruby_size}) ))
+
+  while [ ${#prompt} -lt $spare_width ]; do
+    prompt=" $prompt"
+  done
+  
+  prompt="%{%F{green}%}$PWD$prompt%{%F{red}%}$(rvm_prompt_info || rbenv_prompt_info)%{$reset_color%} $(git_current_branch)"
+  
+  echo $prompt
+}
+
+setopt prompt_subst
+
+PROMPT='
+%n@%m $(josh_prompt)
+%(?,%{%F{green}%},%{%F{red}%})⚡%{$reset_color%} '
+# ZSH Theme - Preview: http://dl.dropbox.com/u/1552408/Screenshots/2010-04-08-oh-my-zsh.png
+
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="green"; fi
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%{$fg[$NCOLOR]%}%n%{$fg[green]%}@%m%{$reset_color%} %~ \
+$(git_prompt_info)\
+%{$fg[red]%}%(!.#.»)%{$reset_color%} '
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+RPS1='${return_code}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}±%{$fg[yellow]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="⚡"
+
+#PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%p %{$fg[cyan]%}%c %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+PROMPT="%{$fg_bold[cyan]%}%T%{$fg_bold[green]%} %{$fg_bold[white]%}%n%{$fg[magenta]%}@%{$fg_bold[white]%}%m %{$fg_bold[green]%}%d
+%{$fg_bold[yellow]%}%% %{$reset_color%}"
+
+#ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+#ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+#ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+#ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+# Color shortcuts
+RED=$fg[red]
+YELLOW=$fg[yellow]
+GREEN=$fg[green]
+WHITE=$fg[white]
+BLUE=$fg[blue]
+RED_BOLD=$fg_bold[red]
+YELLOW_BOLD=$fg_bold[yellow]
+GREEN_BOLD=$fg_bold[green]
+WHITE_BOLD=$fg_bold[white]
+BLUE_BOLD=$fg_bold[blue]
+RESET_COLOR=$reset_color
+
+# Format for git_prompt_info()
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+
+# Format for parse_git_dirty()
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$RED%}(*)"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+# Format for git_prompt_status()
+ZSH_THEME_GIT_PROMPT_UNMERGED=" %{$RED%}unmerged"
+ZSH_THEME_GIT_PROMPT_DELETED=" %{$RED%}deleted"
+ZSH_THEME_GIT_PROMPT_RENAMED=" %{$YELLOW%}renamed"
+ZSH_THEME_GIT_PROMPT_MODIFIED=" %{$YELLOW%}modified"
+ZSH_THEME_GIT_PROMPT_ADDED=" %{$GREEN%}added"
+ZSH_THEME_GIT_PROMPT_UNTRACKED=" %{$WHITE%}untracked"
+
+# Format for git_prompt_ahead()
+ZSH_THEME_GIT_PROMPT_AHEAD=" %{$RED%}(!)"
+
+# Format for git_prompt_long_sha() and git_prompt_short_sha()
+ZSH_THEME_GIT_PROMPT_SHA_BEFORE=" %{$WHITE%}[%{$YELLOW%}"
+ZSH_THEME_GIT_PROMPT_SHA_AFTER="%{$WHITE%}]"
+
+# Prompt format
+PROMPT='
+%{$GREEN_BOLD%}%n@%m%{$WHITE%}:%{$YELLOW%}%~%u$(parse_git_dirty)$(git_prompt_ahead)%{$RESET_COLOR%}
+%{$BLUE%}>%{$RESET_COLOR%} '
+RPROMPT='%{$GREEN_BOLD%}$(git_current_branch)$(git_prompt_short_sha)$(git_prompt_status)%{$RESET_COLOR%}'
+# Totally ripped off Dallas theme
+
+# Grab the current date (%W) and time (%t):
+JUNKFOOD_TIME_="%{$fg_bold[red]%}#%{$fg_bold[white]%}( %{$fg_bold[yellow]%}%W%{$reset_color%}@%{$fg_bold[white]%}%t )( %{$reset_color%}"
+
+# Grab the current machine name 
+JUNKFOOD_MACHINE_="%{$fg_bold[blue]%}%m%{$fg[white]%} ):%{$reset_color%}"
+
+# Grab the current username 
+JUNKFOOD_CURRENT_USER_="%{$fg_bold[green]%}%n%{$reset_color%}"
+
+# Grab the current filepath, use shortcuts: ~/Desktop
+# Append the current git branch, if in a git repository: ~aw@master
+JUNKFOOD_LOCA_="%{$fg[cyan]%}%~\$(git_prompt_info)%{$reset_color%}"
+
+# For the git prompt, use a white @ and blue text for the branch name
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[white]%}@%{$fg_bold[white]%}"
+
+# Close it all off by resetting the color and styles.
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+
+# Do nothing if the branch is clean (no changes).
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✔"
+
+# Add 3 cyan ✗s if this branch is diiirrrty! Dirty branch!
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%}✗✗✗"
+
+# Put it all together!
+PROMPT="$JUNKFOOD_TIME_$JUNKFOOD_CURRENT_USER_@$JUNKFOOD_MACHINE_$JUNKFOOD_LOCA_
+   "
+PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%}%n%{$fg[cyan]%}@%{$fg_bold[green]%}%m %{$fg_bold[green]%}%p %{$fg[cyan]%}%~ %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+# Simple theme based on my old zsh settings.
+
+function get_host {
+	echo '@'$HOST
+}
+
+PROMPT='> '
+RPROMPT='%~$(git_prompt_info)$(get_host)'
+
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='$(virtualenv_prompt_info)%{[03m%}%{$fg[green]%}%c \
+$(git_prompt_info)\
+\
+%{$fg[red]%}%(!.#.»)%{$reset_color%} '
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+RPS1='%{$fg[blue]%}%~%{$reset_color%} ${return_code} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}*%{$fg[yellow]%}"
+ZSH_THEME_VIRTUAL_ENV_PROMPT_PREFIX="%{$reset_color%}%{[03m%}%{$fg[blue]%}"
+ZSH_THEME_VIRTUAL_ENV_PROMPT_SUFFIX="!%{$reset_color%} "# 
+# Kiwi ZSH Theme
+# 
+
+PROMPT='%{$fg_bold[green]%}┌[%{$fg_bold[cyan]%}kiwish-4.2%{$fg_bold[green]%}]-(%{$fg_bold[white]%}%2~%{$fg_bold[green]%})-$(git_prompt_info)$(svn_prompt_info)$(battery_pct_prompt)
+└> % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="[%{$reset_color%}%{$fg[white]%}git:%{$fg_bold[white]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$fg_bold[green]%}]-"
+
+ZSH_THEME_SVN_PROMPT_PREFIX="[%{$reset_color%}%{$fg[white]%}svn:%{$fg_bold[white]%}/"
+ZSH_THEME_SVN_PROMPT_SUFFIX="%{$fg_bold[green]%}]-"
+autoload -Uz vcs_info
+
+zstyle ':vcs_info:*' stagedstr '%F{green}●'
+zstyle ':vcs_info:*' unstagedstr '%F{yellow}●'
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{11}%r'
+zstyle ':vcs_info:*' enable git svn
+theme_precmd () {
+    if [[ -z $(git ls-files --other --exclude-standard 2> /dev/null) ]] {
+        zstyle ':vcs_info:*' formats ' [%b%c%u%B%F{green}]'
+    } else {
+        zstyle ':vcs_info:*' formats ' [%b%c%u%B%F{red}●%F{green}]'
+    }
+
+    vcs_info
+}
+
+setopt prompt_subst
+PROMPT='%B%F{magenta}%c%B%F{green}${vcs_info_msg_0_}%B%F{magenta} %{$reset_color%}%% '
+
+autoload -U add-zsh-hook
+add-zsh-hook precmd  theme_precmd
+# kphoen.zsh-theme
+
+if [[ "$TERM" != "dumb" ]] && [[ "$DISABLE_LS_COLORS" != "true" ]]; then
+    PROMPT='[%{$fg[red]%}%n%{$reset_color%}@%{$fg[magenta]%}%m%{$reset_color%}:%{$fg[blue]%}%~%{$reset_color%}$(git_prompt_info)]
+%# '
+
+    ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[green]%}"
+    ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+    ZSH_THEME_GIT_PROMPT_DIRTY=""
+    ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+    # display exitcode on the right when >0
+    return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+    RPROMPT='${return_code}$(git_prompt_status)%{$reset_color%}'
+
+    ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+    ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+    ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+    ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+    ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+    ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+else
+    PROMPT='[%n@%m:%~$(git_prompt_info)]
+%# '
+
+    ZSH_THEME_GIT_PROMPT_PREFIX=" on"
+    ZSH_THEME_GIT_PROMPT_SUFFIX=""
+    ZSH_THEME_GIT_PROMPT_DIRTY=""
+    ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+    # display exitcode on the right when >0
+    return_code="%(?..%? ↵)"
+
+    RPROMPT='${return_code}$(git_prompt_status)'
+
+    ZSH_THEME_GIT_PROMPT_ADDED=" ✚"
+    ZSH_THEME_GIT_PROMPT_MODIFIED=" ✹"
+    ZSH_THEME_GIT_PROMPT_DELETED=" ✖"
+    ZSH_THEME_GIT_PROMPT_RENAMED=" ➜"
+    ZSH_THEME_GIT_PROMPT_UNMERGED=" ═"
+    ZSH_THEME_GIT_PROMPT_UNTRACKED=" ✭"
+fi
+# ZSH Theme - Preview: http://cl.ly/350F0F0k1M2y3A2i3p1S
+
+PROMPT='λ %~/ $(git_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+# vim: set ts=2 textwidth=0
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+local c0=$(printf "\033[0m")
+local c1=$(printf "\033[38;5;215m")
+local c2=$(printf "\033[38;5;209m")
+local c3=$(printf "\033[38;5;203m")
+local c4=$(printf "\033[33;4m")
+local c5=$(printf "\033[38;5;137m")
+local c6=$(printf "\033[38;5;240m")
+local c7=$(printf "\033[38;5;149m")
+local c8=$(printf "\033[38;5;126m")
+local c9=$(printf "\033[38;5;162m")
+
+
+if [ "$TERM" = "linux" ]; then
+    c1=$(printf "\033[34;1m")
+    c2=$(printf "\033[35m")
+    c3=$(printf "\033[31m")
+    c4=$(printf "\033[31;1m")
+    c5=$(printf "\033[32m")
+    c6=$(printf "\033[32;1m")
+    c7=$(printf "\033[33m")
+    c8=$(printf "\033[33;1m")
+    c9=$(printf "\033[34m")
+fi
+
+#local newtv=$(perl $HOME/devel/newtv.pl)
+local newtv=''
+
+zstyle ':vcs_info:*' actionformats \
+    '%{$c8%}(%f%s)%{$c7%}-%F{5}[%F{2}%b%F{3}|%F{1}%a%F{5}]%f '
+zstyle ':vcs_info:*' formats \
+    "%{$c8%}%s%{$c7%}:%{$c7%}(%{$c9%}%b%{$c7%})%f "
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{3}%r'
+zstyle ':vcs_info:*' enable git
+
+add-zsh-hook precmd prompt_jnrowe_precmd
+
+prompt_jnrowe_precmd () {
+    vcs_info
+
+    if [ "${vcs_info_msg_0_}" = "" ]; then
+        #dir_status="|%F{3}%n%F{7}@%F{3}%m%F{7}:%F{9}%l%f"
+        #dir_status="$c1%n%F{7}@%F{9}%m%F{7}:%F{12}%/"
+        dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$c4%}%/ %{$c0%}(%{$c5%}%?%{$c0%})"
+        #dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$foopath%} %{$c0%}(%{$c5%}%?%{$c0%})"
+        
+        PROMPT='%{$fg_bold[green]%}%p%{$reset_color%}${vcs_info_msg_0_}${dir_status} ${ret_status}%{$reset_color%}
+> '
+    elif [[ $(git diff --cached --name-status 2>/dev/null ) != "" ]]; then
+        dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$c4%}%/ %{$c0%}(%{$c5%}%?%{$c0%})"
+        PROMPT='${vcs_info_msg_0_}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status} ${vcs_info_msg_0_}%{$reset_color%}
+> '
+    
+    elif [[ $(git diff --name-status 2>/dev/null ) != "" ]]; then
+        dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$c4%}%/ %{$c0%}(%{$c5%}%?%{$c0%})"
+
+        PROMPT='${vcs_info_msg_0_}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status}%{$reset_color%}
+%{$c9%}·>%{$c0%} '
+    else
+        dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$c4%}%/ %{$c0%}(%{$c5%}%?%{$c0%})"
+        PROMPT='${vcs_info_msg_0_}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status} ${vcs_info_msg_0_}%{$reset_color%}
+> '
+        
+    fi
+}
+
+
+#PROMPT='${ret_status}%{$fg_bold[green]%}%p %{$reset_color%} ${vcs_info_msg_0_}${dir_status}%{$reset_color%}
+#> '
+
+# vim: set ft=zsh ts=4 sw=4 et:
+
+
+# ZSH Theme - Preview: http://cl.ly/f701d00760f8059e06dc
+# Thanks to gallifrey, upon whose theme this is based
+
+local return_code="%(?..%{$fg_bold[red]%}%? ↵%{$reset_color%})"
+
+function my_git_prompt_info() {
+  ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+  GIT_STATUS=$(git_prompt_status)
+  [[ -n $GIT_STATUS ]] && GIT_STATUS=" $GIT_STATUS"
+  echo "$ZSH_THEME_GIT_PROMPT_PREFIX${ref#refs/heads/}$GIT_STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+}
+
+PROMPT='%{$fg_bold[green]%}%n@%m%{$reset_color%} %{$fg_bold[blue]%}%2~%{$reset_color%} $(my_git_prompt_info)%{$reset_color%}%B»%b '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=") %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%%"
+ZSH_THEME_GIT_PROMPT_ADDED="+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="*"
+ZSH_THEME_GIT_PROMPT_RENAMED="~"
+ZSH_THEME_GIT_PROMPT_DELETED="!"
+ZSH_THEME_GIT_PROMPT_UNMERGED="?"
+
+# ZSH Theme - Preview: http://gyazo.com/8becc8a7ed5ab54a0262a470555c3eed.png
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+  PROMPT='%{$fg[green]%}%~%{$reset_color%} %{$fg[red]%}‹$(~/.rvm/bin/rvm-prompt i v)› %{$reset_color%} $(git_prompt_info)%{$reset_color%}%B$%b '
+else
+  if which rbenv &> /dev/null; then
+    PROMPT='%{$fg[green]%}%~%{$reset_color%} %{$fg[red]%}‹$(rbenv version | sed -e "s/ (set.*$//")› %{$reset_color%} $(git_prompt_info)%{$reset_color%}%B$%b '
+  fi
+fi
+
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+# ZSH Theme - Preview: http://gyazo.com/8becc8a7ed5ab54a0262a470555c3eed.png
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+  PROMPT='%{$fg[green]%}%~%{$reset_color%} %{$fg[red]%}‹$(~/.rvm/bin/rvm-prompt i v)› %{$reset_color%} $(git_prompt_info)%{$reset_color%}%B$%b '
+else
+  if which rbenv &> /dev/null; then
+    PROMPT='%{$fg[green]%}%~%{$reset_color%} %{$fg[red]%}‹$(rbenv version | sed -e "s/ (set.*$//")› %{$reset_color%} $(git_prompt_info)%{$reset_color%}%B$%b '
+  fi
+fi
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+# Theme with full path names and hostname
+# Handy if you work on different servers all the time;
+PROMPT='%{$fg[cyan]%}%n%{$reset_color%}@%{$fg[yellow]%}%M:%{$fg[green]%}%/%{$reset_color%} $(git_prompt_info) %(!.#.$) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[cyan]%}git:("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+PROMPT='%{$fg_bold[magenta]%}%1~$(git_prompt_info) %{$fg_bold[magenta]%}%# %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[yellow]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="*]"
+ZSH_THEME_GIT_PROMPT_CLEAN="]"
+# mh theme
+# preview: http://cl.ly/1y2x0W0E3t2C0F29043z
+
+# features:
+# path is autoshortened to ~30 characters
+# displays git status (if applicable in current folder)
+# turns username green if superuser, otherwise it is white
+
+# if superuser make the username green
+if [ $UID -eq 0 ]; then NCOLOR="green"; else NCOLOR="white"; fi
+
+# prompt
+PROMPT='[%{$fg[$NCOLOR]%}%B%n%b%{$reset_color%}:%{$fg[red]%}%30<...<%~%<<%{$reset_color%}]%(!.#.$) '
+RPROMPT='$(git_prompt_info)'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[gray]%}(%{$fg_no_bold[yellow]%}%B"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%b%{$fg_bold[gray]%})%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%}✱"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="Gxfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:'
+# Michele Bologna's theme
+# http://michelebologna.net
+#
+# This a theme for oh-my-zsh. Features a colored prompt with:
+# * username@host: [jobs] [git] workdir % 
+# * hostname color is based on hostname characters. When using as root, the 
+# prompt shows only the hostname in red color.
+# * [jobs], if applicable, counts the number of suspended jobs tty
+# * [git], if applicable, represents the status of your git repo (more on that
+# later)
+# * '%' prompt will be green if last command return value is 0, yellow otherwise.
+# 
+# git prompt is inspired by official git contrib prompt: 
+# https://github.com/git/git/tree/master/contrib/completion/git-prompt.sh
+# and it adds:
+# * the current branch
+# * '%' if there are untracked files
+# * '$' if there are stashed changes
+# * '*' if there are modified files
+# * '+' if there are added files
+# * '<' if local repo is behind remote repo
+# * '>' if local repo is ahead remote repo
+# * '=' if local repo is equal to remote repo (in sync)
+# * '<>' if local repo is diverged
+
+local green="%{$fg_bold[green]%}"
+local red="%{$fg_bold[red]%}"
+local cyan="%{$fg_bold[cyan]%}"
+local yellow="%{$fg_bold[yellow]%}"
+local blue="%{$fg_bold[blue]%}"
+local magenta="%{$fg_bold[magenta]%}"
+local white="%{$fg_bold[white]%}"
+local reset="%{$reset_color%}"
+
+local -a color_array
+color_array=($green $red $cyan $yellow $blue $magenta $white)
+
+local username_normal_color=$white
+local username_root_color=$red
+local hostname_root_color=$red
+
+# calculating hostname color with hostname characters
+for i in `hostname`; local hostname_normal_color=$color_array[$[((#i))%7+1]]
+local -a hostname_color
+hostname_color=%(!.$hostname_root_color.$hostname_normal_color)
+
+local current_dir_color=$blue
+local username_command="%n"
+local hostname_command="%m"
+local current_dir="%~"
+
+local username_output="%(!..$username_normal_color$username_command$reset@)"
+local hostname_output="$hostname_color$hostname_command$reset"
+local current_dir_output="$current_dir_color$current_dir$reset"
+local jobs_bg="${red}fg: %j$reset"
+local last_command_output="%(?.%(!.$red.$green).$yellow)"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_UNTRACKED="$blue%%"
+ZSH_THEME_GIT_PROMPT_MODIFIED="$red*"
+ZSH_THEME_GIT_PROMPT_ADDED="$green+"
+ZSH_THEME_GIT_PROMPT_STASHED="$blue$"
+ZSH_THEME_GIT_PROMPT_EQUAL_REMOTE="$green="
+ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE=">"
+ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE="<"
+ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE="$red<>"
+
+PROMPT='$username_output$hostname_output:$current_dir_output%1(j. [$jobs_bg].)'
+GIT_PROMPT='$(out=$(git_prompt_info)$(git_prompt_status)$(git_remote_status);if [[ -n $out ]]; then printf %s " $white($green$out$white)$reset";fi)'
+PROMPT+="$GIT_PROMPT"
+PROMPT+=" $last_command_output%#$reset "
+RPROMPT=''
+setopt prompt_subst
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+# check-for-changes can be really slow.
+# you should disable it, if you work with large repositories
+zstyle ':vcs_info:*:prompt:*' check-for-changes true
+
+add-zsh-hook precmd mikeh_precmd
+
+mikeh_precmd() {
+    vcs_info
+}
+
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+PROMPT=$'%{\e[0;34m%}%B..[%b%{\e[0m%}%{\e[1;32m%}%n%{\e[1;30m%}@%{\e[0m%}%{\e[0;36m%}%m%{\e[0;34m%}%B]%b%{\e[0m%} - %b%{\e[0;34m%}%B[%b%{\e[1;37m%}%~%{\e[0;34m%}%B]%b%{\e[0m%} - %{\e[0;34m%}%B[%b%{\e[0;33m%}'%D{"%a %b %d, %I:%M"}%b$'%{\e[0;34m%}%B]%b%{\e[0m%}
+%{\e[0;34m%}%B..%B[%{\e[1;35m%}$%{\e[0;34m%}%B] <($vcs_info_msg_0_)>%{\e[0m%}%b '
+PS2=$' \e[0;34m%}%B>%{\e[0m%}%b '# Yay! High voltage and arrows!
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+PROMPT='%{$fg[cyan]%}%1~%{$reset_color%}%{$fg[red]%}|%{$reset_color%}$(git_prompt_info)%{$fg[cyan]%}⇒%{$reset_color%} '
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[white]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}●%{$fg[white]%}]%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN="]%{$reset_color%} "
+ZSH_THEME_SVN_PROMPT_PREFIX=$ZSH_THEME_GIT_PROMPT_PREFIX
+ZSH_THEME_SVN_PROMPT_SUFFIX=$ZSH_THEME_GIT_PROMPT_SUFFIX
+ZSH_THEME_SVN_PROMPT_DIRTY=$ZSH_THEME_GIT_PROMPT_DIRTY
+ZSH_THEME_SVN_PROMPT_CLEAN=$ZSH_THEME_GIT_PROMPT_CLEAN
+ZSH_THEME_HG_PROMPT_PREFIX=$ZSH_THEME_GIT_PROMPT_PREFIX
+ZSH_THEME_HG_PROMPT_SUFFIX=$ZSH_THEME_GIT_PROMPT_SUFFIX
+ZSH_THEME_HG_PROMPT_DIRTY=$ZSH_THEME_GIT_PROMPT_DIRTY
+ZSH_THEME_HG_PROMPT_CLEAN=$ZSH_THEME_GIT_PROMPT_CLEAN
+
+vcs_status() {
+    if [[ $(whence in_svn) != "" ]] && in_svn; then
+        svn_prompt_info
+    elif [[ $(whence in_hg) != "" ]] && in_hg; then
+        hg_prompt_info
+    else
+        git_prompt_info
+    fi
+}
+
+PROMPT='%2~ $(vcs_status)»%b '
+# Based on bira zsh theme with nvm, rvm and jenv support
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+local user_host='%{$terminfo[bold]$fg[green]%}%n@%m%{$reset_color%}'
+local current_dir='%{$terminfo[bold]$fg[blue]%} %~%{$reset_color%}'
+
+local rvm_ruby=''
+if which rvm-prompt &> /dev/null; then
+  rvm_ruby='%{$fg[red]%}‹$(rvm-prompt i v g)›%{$reset_color%}'
+else
+  if which rbenv &> /dev/null; then
+    rvm_ruby='%{$fg[red]%}‹$(rbenv version | sed -e "s/ (set.*$//")›%{$reset_color%}'
+  fi
+fi
+
+local nvm_node=''
+nvm_node='%{$fg[green]%}‹node-$(nvm_prompt_info)›%{$reset_color%}'
+
+local jenv_java=''
+jenv_java='%{$fg[blue]%}‹$(jenv_prompt_info)›%{$reset_color%}'
+
+local git_branch='$(git_prompt_info)%{$reset_color%}'
+
+PROMPT="╭─${user_host} ${current_dir} ${nvm_node} ${rvm_ruby} ${jenv_java} ${git_branch}
+╰─%B$%b "
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=") %{$reset_color%}"
+function my_git_prompt() {
+  tester=$(git rev-parse --git-dir 2> /dev/null) || return
+  
+  INDEX=$(git status --porcelain 2> /dev/null)
+  STATUS=""
+
+  # is branch ahead?
+  if $(echo "$(git log origin/$(git_current_branch)..HEAD 2> /dev/null)" | grep '^commit' &> /dev/null); then
+    STATUS="$STATUS$ZSH_THEME_GIT_PROMPT_AHEAD"
+  fi
+
+  # is anything staged?
+  if $(echo "$INDEX" | command grep -E -e '^(D[ M]|[MARC][ MD]) ' &> /dev/null); then
+    STATUS="$STATUS$ZSH_THEME_GIT_PROMPT_STAGED"
+  fi
+
+  # is anything unstaged?
+  if $(echo "$INDEX" | command grep -E -e '^[ MARC][MD] ' &> /dev/null); then
+    STATUS="$STATUS$ZSH_THEME_GIT_PROMPT_UNSTAGED"
+  fi
+
+  # is anything untracked?
+  if $(echo "$INDEX" | grep '^?? ' &> /dev/null); then
+    STATUS="$STATUS$ZSH_THEME_GIT_PROMPT_UNTRACKED"
+  fi
+
+  # is anything unmerged?
+  if $(echo "$INDEX" | command grep -E -e '^(A[AU]|D[DU]|U[ADU]) ' &> /dev/null); then
+    STATUS="$STATUS$ZSH_THEME_GIT_PROMPT_UNMERGED"
+  fi
+
+  if [[ -n $STATUS ]]; then
+    STATUS=" $STATUS"
+  fi
+
+  echo "$ZSH_THEME_GIT_PROMPT_PREFIX$(my_current_branch)$STATUS$ZSH_THEME_GIT_PROMPT_SUFFIX"
+}
+
+function my_current_branch() {
+  echo $(git_current_branch || echo "(no branch)")
+}
+
+function ssh_connection() {
+  if [[ -n $SSH_CONNECTION ]]; then
+    echo "%{$fg_bold[red]%}(ssh) "
+  fi
+}
+
+local ret_status="%(?:%{$fg_bold[green]%}:%{$fg_bold[red]%})%?%{$reset_color%}"
+PROMPT=$'\n$(ssh_connection)%{$fg_bold[green]%}%n@%m%{$reset_color%}$(my_git_prompt) : %~\n[${ret_status}] %# '
+
+ZSH_THEME_PROMPT_RETURNCODE_PREFIX="%{$fg_bold[red]%}"
+ZSH_THEME_GIT_PROMPT_PREFIX=" $fg[white]‹ %{$fg_bold[yellow]%}"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$fg_bold[magenta]%}↑"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$fg_bold[green]%}●"
+ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$fg_bold[red]%}●"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg_bold[white]%}●"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg_bold[red]%}✕"
+ZSH_THEME_GIT_PROMPT_SUFFIX=" $fg_bold[white]›%{$reset_color%}"
+PROMPT='%{$fg_bold[red]%}%m%{$reset_color%}:%{$fg[cyan]%}%c%{$reset_color%}:%# '
+RPROMPT='%{$fg_bold[green]%}$(git_prompt_info)%{$reset_color%}% '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="<%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%} %{$fg[yellow]%}✗%{$fg[green]%}>%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%}>"
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+local user_host='%{$terminfo[bold]$fg[green]%}%n@%m%{$reset_color%}'
+local current_dir='%{$terminfo[bold]$fg[blue]%}%~%{$reset_color%}'
+local rvm_ruby='%{$fg[red]%}$(rvm_prompt_info || rbenv_prompt_info)%{$reset_color%}'
+local git_branch='%{$fg[blue]%}$(git_prompt_info)%{$reset_color%}'
+
+PROMPT="${user_host}:${current_dir} ${rvm_ruby}
+${git_branch} %B$%b "
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$fg[green]%}✔%{$reset_color%}"
+#!/usr/bin/env zsh
+#local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+setopt promptsubst
+
+autoload -U add-zsh-hook
+
+PROMPT_SUCCESS_COLOR=$FG[117]
+PROMPT_FAILURE_COLOR=$FG[124]
+PROMPT_VCS_INFO_COLOR=$FG[242]
+PROMPT_PROMPT=$FG[077]
+GIT_DIRTY_COLOR=$FG[133]
+GIT_CLEAN_COLOR=$FG[118]
+GIT_PROMPT_INFO=$FG[012]
+
+PROMPT='%{$PROMPT_SUCCESS_COLOR%}%~%{$reset_color%}%{$GIT_PROMPT_INFO%}$(git_prompt_info)$(virtualenv_prompt_info)%{$GIT_DIRTY_COLOR%}$(git_prompt_status) %{$reset_color%}%{$PROMPT_PROMPT%}ᐅ%{$reset_color%} '
+
+#RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" ("
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$GIT_PROMPT_INFO%})"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$GIT_DIRTY_COLOR%}✘"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$GIT_CLEAN_COLOR%}✔"
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$FG[082]%}✚%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$FG[166]%}✹%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$FG[160]%}✖%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$FG[220]%}➜%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$FG[082]%}═%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$FG[190]%}✭%{$reset_color%}"
+
+ZSH_THEME_VIRTUALENV_PREFIX=" ["
+ZSH_THEME_VIRTUALENV_SUFFIX="]"
+PROMPT='%F{green}%2c%F{blue} [%f '
+RPROMPT='$(git_prompt_info) %F{blue}] %F{green}%D{%L:%M} %F{yellow}%D{%p}%f'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%F{yellow}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%f"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %F{red}*%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+# Based on robbyrussell's theme, with host and rvm indicators. Example:
+# @host ➜ currentdir rvm:(rubyversion@gemset) git:(branchname)
+
+# Get the current ruby version in use with RVM:
+if [ -e ~/.rvm/bin/rvm-prompt ]; then
+    RUBY_PROMPT_="%{$fg_bold[blue]%}rvm:(%{$fg[green]%}\$(~/.rvm/bin/rvm-prompt s i v g)%{$fg_bold[blue]%})%{$reset_color%} "
+else
+  if which rbenv &> /dev/null; then
+    RUBY_PROMPT_="%{$fg_bold[blue]%}rbenv:(%{$fg[green]%}\$(rbenv version | sed -e 's/ (set.*$//')%{$fg_bold[blue]%})%{$reset_color%} "
+  fi
+fi
+
+# Get the host name (first 4 chars)
+HOST_PROMPT_="%{$fg_bold[red]%}@$HOST ➜ %{$fg_bold[cyan]%}%c "
+GIT_PROMPT="%{$fg_bold[blue]%}\$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}"
+PROMPT="$HOST_PROMPT_$RUBY_PROMPT_$GIT_PROMPT"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+#!/usr/bin/env zsh
+# ------------------------------------------------------------------------------
+# Prompt for the Zsh shell:
+#   * One line.
+#   * VCS info on the right prompt.
+#   * Only shows the path on the left prompt by default.
+#   * Crops the path to a defined length and only shows the path relative to
+#     the current VCS repository root.
+#   * Wears a different color wether the last command succeeded/failed.
+#   * Shows user@hostname if connected through SSH.
+#   * Shows if logged in as root or not.
+# ------------------------------------------------------------------------------
+
+# Customizable parameters.
+PROMPT_PATH_MAX_LENGTH=30
+PROMPT_DEFAULT_END=❯
+PROMPT_ROOT_END=❯❯❯
+PROMPT_SUCCESS_COLOR=$FG[071]
+PROMPT_FAILURE_COLOR=$FG[124]
+PROMPT_VCS_INFO_COLOR=$FG[242]
+
+# Set required options.
+setopt promptsubst
+
+# Load required modules.
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+# Add hook for calling vcs_info before each command.
+add-zsh-hook precmd vcs_info
+
+# Set vcs_info parameters.
+zstyle ':vcs_info:*' enable hg bzr git
+zstyle ':vcs_info:*:*' check-for-changes true # Can be slow on big repos.
+zstyle ':vcs_info:*:*' unstagedstr '!'
+zstyle ':vcs_info:*:*' stagedstr '+'
+zstyle ':vcs_info:*:*' actionformats "%S" "%r/%s/%b %u%c (%a)"
+zstyle ':vcs_info:*:*' formats "%S" "%r/%s/%b %u%c"
+zstyle ':vcs_info:*:*' nvcsformats "%~" ""
+
+# Define prompts.
+PROMPT="%(0?.%{$PROMPT_SUCCESS_COLOR%}.%{$PROMPT_FAILURE_COLOR%})${SSH_TTY:+[%n@%m]}%{$FX[bold]%}%$PROMPT_PATH_MAX_LENGTH<..<"'${vcs_info_msg_0_%%.}'"%<<%(!.$PROMPT_ROOT_END.$PROMPT_DEFAULT_END)%{$FX[no-bold]%}%{$FX[reset]%} "
+RPROMPT="%{$PROMPT_VCS_INFO_COLOR%}"'$vcs_info_msg_1_'"%{$FX[reset]%}"
+PROMPT='%{$fg[yellow]%}λ %m %{$fg[green]%}%c %{$fg[yellow]%}→ $(git_prompt_info)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="λ %{$fg[blue]%}git %{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$fg[yellow]%} → %{$reset_color%}"
+if [ "$USER" = "root" ]; then CARETCOLOR="red"; else CARETCOLOR="blue"; fi
+
+local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+PROMPT='%{$fg[green]%}[%*]%{$reset_color%} %{$fg_no_bold[cyan]%}%n %{${fg_bold[blue]}%}::%{$reset_color%} %{$fg[yellow]%}%m%{$reset_color%} %{$fg_no_bold[magenta]%} ➜ %{$reset_color%} %{${fg[green]}%}%3~ $(git_prompt_info)%{${fg_bold[$CARETCOLOR]}%}»%{${reset_color}%} '
+
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[red]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="› %{$reset_color%}"
+
+#
+# Based on Geoffrey Grosenbach's peepcode zsh theme from
+# https://github.com/topfunky/zsh-simple
+#
+
+git_repo_path() {
+  git rev-parse --git-dir 2>/dev/null
+}
+
+git_commit_id() {
+  git rev-parse --short HEAD 2>/dev/null
+}
+
+git_mode() {
+  if [[ -e "$repo_path/BISECT_LOG" ]]; then
+    echo "+bisect"
+  elif [[ -e "$repo_path/MERGE_HEAD" ]]; then
+    echo "+merge"
+  elif [[ -e "$repo_path/rebase" || -e "$repo_path/rebase-apply" || -e "$repo_path/rebase-merge" || -e "$repo_path/../.dotest" ]]; then
+    echo "+rebase"
+  fi
+}
+
+git_dirty() {
+  if [[ "$repo_path" != '.' && `git ls-files -m` != "" ]]; then
+    echo " %{$fg_bold[grey]%}✗%{$reset_color%}"
+  fi
+}
+
+git_prompt() {
+  local cb=$(git_current_branch)
+  if [ -n "$cb" ]; then
+    local repo_path=$(git_repo_path)
+    echo " %{$fg_bold[grey]%}$cb %{$fg[white]%}$(git_commit_id)%{$reset_color%}$(git_mode)$(git_dirty)"
+  fi
+}
+
+local smiley="%(?,%{$fg[green]%}☺%{$reset_color%},%{$fg[red]%}☹%{$reset_color%})"
+
+PROMPT='
+%~
+${smiley}  %{$reset_color%}'
+
+RPROMPT='%{$fg[white]%} $(ruby_prompt_info)$(git_prompt)%{$reset_color%}'
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="green"; fi
+
+PROMPT='%{$fg[$NCOLOR]%}%B%n%b%{$reset_color%}:%{$fg[blue]%}%B%c/%b%{$reset_color%} $(git_prompt_info)%(!.#.$) '
+RPROMPT='[%*]'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}(%{$fg_no_bold[red]%}%B"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%b%{$fg_bold[blue]%})%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="*"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="Gxfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:*.patch=00;34:*.o=00;32:*.so=01;35:*.ko=01;31:*.la=00;33'
+if [ $UID -eq 0 ]; then NCOLOR="red"; else NCOLOR="green"; fi
+
+PROMPT='
+%{$fg[$NCOLOR]%}%B%n@%m%b%{$reset_color%} %{$fg[white]%}%B${PWD/#$HOME/~}%b%{$reset_color%}
+$(git_prompt_info)%(!.#.$) '
+RPROMPT='[%*]'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_no_bold[yellow]%}%B"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%}*"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="Gxfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:'
+print -P '%F{yellow}'Oh My Zsh pure theme:
+cat <<-EOF
+
+	  The pure theme has been renamed as 'refined' as per the original author's
+	  request. Change your ZSH_THEME to 'refined' to avoid seeing this warning.
+
+EOF
+print -P '%f'
+
+source ${0:h:A}/refined.zsh-theme
+# Yay! High voltage and arrows!
+
+prompt_setup_pygmalion(){
+  ZSH_THEME_GIT_PROMPT_PREFIX="%{$reset_color%}%{$fg[green]%}"
+  ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+  ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%}⚡%{$reset_color%}"
+  ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+  base_prompt='%{$fg[magenta]%}%n%{$reset_color%}%{$fg[cyan]%}@%{$reset_color%}%{$fg[yellow]%}%m%{$reset_color%}%{$fg[red]%}:%{$reset_color%}%{$fg[cyan]%}%0~%{$reset_color%}%{$fg[red]%}|%{$reset_color%}'
+  post_prompt='%{$fg[cyan]%}⇒%{$reset_color%}  '
+
+  base_prompt_nocolor=$(echo "$base_prompt" | perl -pe "s/%\{[^}]+\}//g")
+  post_prompt_nocolor=$(echo "$post_prompt" | perl -pe "s/%\{[^}]+\}//g")
+
+  precmd_functions+=(prompt_pygmalion_precmd)
+}
+
+prompt_pygmalion_precmd(){
+  local gitinfo=$(git_prompt_info)
+  local gitinfo_nocolor=$(echo "$gitinfo" | perl -pe "s/%\{[^}]+\}//g")
+  local exp_nocolor="$(print -P \"$base_prompt_nocolor$gitinfo_nocolor$post_prompt_nocolor\")"
+  local prompt_length=${#exp_nocolor}
+
+  local nl=""
+
+  if [[ $prompt_length -gt 40 ]]; then
+    nl=$'\n%{\r%}';
+  fi
+  PROMPT="$base_prompt$gitinfo$nl$post_prompt"
+}
+
+prompt_setup_pygmalion
+
+
+if [ "$USER" = "root" ]; then CARETCOLOR="red"; else CARETCOLOR="magenta"; fi
+
+local return_code="%(?..%{$fg_bold[red]%}:( %?%{$reset_color%})"
+
+PROMPT='
+%{$fg_bold[cyan]%}%n%{$reset_color%}%{$fg[yellow]%}@%{$reset_color%}%{$fg_bold[blue]%}%m%{$reset_color%}:%{${fg_bold[green]}%}%~%{$reset_color%}$(git_prompt_info)
+%{${fg[$CARETCOLOR]}%}%# %{${reset_color}%}'
+
+RPS1='${return_code} %D - %*'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[magenta]%}^%{$reset_color%}%{$fg_bold[yellow]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%} ±"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ?"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[red]%} ♥"
+PROMPT='
+%n@%m %{$fg[cyan]%}%~
+%? $(git_prompt_info)%{$fg_bold[blue]%}%% %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%}"
+# -*- sh -*- vim:set ft=sh ai et sw=4 sts=4:
+# It might be bash like, but I can't have my co-workers knowing I use zsh
+PROMPT='%{$fg[green]%}%n@%m:%{$fg_bold[blue]%}%2~ $(git_prompt_info)%{$reset_color%}%(!.#.$) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[red]%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="›%{$reset_color%}"
+# name in folder (github)
+# ± if in github repo, or ≥ if otherwise Time in 24-hour format is on right.
+function collapse_pwd {
+    echo $(pwd | sed -e "s,^$HOME,~,")
+}
+function prompt_char {
+    echo -n "%{$bg[white]%}%{$fg[red]%}"
+    git branch >/dev/null 2>/dev/null && echo "±%{$reset_color%}" && return
+    echo "≥%{$reset_color%}"
+}
+RIXIUS_PRE="%{$bg[white]%}%{$fg[red]%}"
+
+PROMPT='
+%{$RIXIUS_PRE%}%n%{$reset_color%} in %{$fg_bold[green]%}$(collapse_pwd)%{$reset_color%}$(git_prompt_info)
+$(prompt_char) '
+RPROMPT='%{$RIXIUS_PRE%}%T%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[magenta]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$RIXIUS_PRE%}!%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$RIXIUS_PRE%}√%{$reset_color%}"
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+
+function hg_prompt_info {
+    hg prompt --angle-brackets "\
+<hg:%{$fg[magenta]%}<branch>%{$reset_color%}><:%{$fg[magenta]%}<bookmark>%{$reset_color%}>\
+</%{$fg[yellow]%}<tags|%{$reset_color%}, %{$fg[yellow]%}>%{$reset_color%}>\
+%{$fg[red]%}<status|modified|unknown><update>%{$reset_color%}<
+patches: <patches|join( → )|pre_applied(%{$fg[yellow]%})|post_applied(%{$reset_color%})|pre_unapplied(%{$fg_bold[black]%})|post_unapplied(%{$reset_color%})>>" 2>/dev/null
+}
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[cyan]%}+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%}✱"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%}✗"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%}➦"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[magenta]%}✂"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[blue]%}✈"
+ZSH_THEME_GIT_PROMPT_SHA_BEFORE=" %{$fg[blue]%}"
+ZSH_THEME_GIT_PROMPT_SHA_AFTER="%{$reset_color%}"
+
+function mygit() {
+  if [[ "$(git config --get oh-my-zsh.hide-status)" != "1" ]]; then
+    ref=$(command git symbolic-ref HEAD 2> /dev/null) || \
+    ref=$(command git rev-parse --short HEAD 2> /dev/null) || return
+    echo "$ZSH_THEME_GIT_PROMPT_PREFIX${ref#refs/heads/}$(git_prompt_short_sha)$(git_prompt_status)%{$fg_bold[blue]%}$ZSH_THEME_GIT_PROMPT_SUFFIX "
+  fi
+}
+
+function retcode() {}
+
+# alternate prompt with git & hg
+PROMPT=$'%{$fg_bold[blue]%}┌─[%{$fg_bold[green]%}%n%b%{$fg[black]%}@%{$fg[cyan]%}%m%{$fg_bold[blue]%}]%{$reset_color%} - %{$fg_bold[blue]%}[%{$fg_bold[white]%}%~%{$fg_bold[blue]%}]%{$reset_color%} - %{$fg_bold[blue]%}[%b%{$fg[yellow]%}'%D{"%Y-%m-%d %I:%M:%S"}%b$'%{$fg_bold[blue]%}]
+%{$fg_bold[blue]%}└─[%{$fg_bold[magenta]%}%?$(retcode)%{$fg_bold[blue]%}] <$(mygit)$(hg_prompt_info)>%{$reset_color%} '
+PS2=$' \e[0;34m%}%B>%{\e[0m%}%b '
+
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+
+function retcode() {}
+
+PROMPT=$'%{\e[0;34m%}%B┌─[%b%{\e[0m%}%{\e[1;32m%}%n%{\e[1;30m%}@%{\e[0m%}%{\e[0;36m%}%m%{\e[0;34m%}%B]%b%{\e[0m%} - %b%{\e[0;34m%}%B[%b%{\e[1;37m%}%~%{\e[0;34m%}%B]%b%{\e[0m%} - %{\e[0;34m%}%B[%b%{\e[0;33m%}'%D{"%Y-%m-%d %I:%M:%S"}%b$'%{\e[0;34m%}%B]%b%{\e[0m%}
+%{\e[0;34m%}%B└─%B[%{\e[1;35m%}%?$(retcode)%{\e[0;34m%}%B]%{\e[0m%}%b '
+
+local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ )"
+PROMPT='${ret_status} %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+PROMPT='%{$fg[white]%}%c$(git_prompt_info)$ % %{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY="*)"
+ZSH_THEME_GIT_PROMPT_CLEAN=")"
+# Prompt
+#
+# Below are the color init strings for the basic file types. A color init
+# string consists of one or more of the following numeric codes:
+# Attribute codes:
+# 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
+# Text color codes:
+# 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
+# Background color codes:
+# 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
+function precmd {
+
+    local TERMWIDTH
+    (( TERMWIDTH = ${COLUMNS} - 1 ))
+
+
+    ###
+    # Truncate the path if it's too long.
+
+    PR_FILLBAR=""
+    PR_PWDLEN=""
+
+    local promptsize=${#${(%):---(%n@%M:%l)---()}}
+    local pwdsize=${#${(%):-%~}}
+    local gitbranch="$(git_prompt_info)"
+    local rvmprompt="$(rvm_prompt_info)"
+    local gitbranchsize=${#${gitbranch:-''}}
+    local rvmpromptsize=${#${rvmprompt:-''}}
+
+    if [[ "$promptsize + $pwdsize + $rvmpromptsize + $gitbranchsize" -gt $TERMWIDTH ]]; then
+        ((PR_PWDLEN=$TERMWIDTH - $promptsize))
+    else
+        PR_FILLBAR="\${(l.(($TERMWIDTH - ($promptsize + $pwdsize + $rvmpromptsize + $gitbranchsize)))..${PR_SPACE}.)}"
+    fi
+}
+
+
+setopt extended_glob
+
+preexec () {
+    if [[ "$TERM" == "screen" ]]; then
+        local CMD=${1[(wr)^(*=*|sudo|-*)]}
+        echo -n "\ek$CMD\e\\"
+    fi
+
+    if [[ "$TERM" == "xterm" ]]; then
+        print -Pn "\e]0;$1\a"
+    fi
+
+    if [[ "$TERM" == "rxvt" ]]; then
+        print -Pn "\e]0;$1\a"
+    fi
+
+}
+
+setprompt () {
+###
+# Need this so the prompt will work.
+
+    setopt prompt_subst
+
+
+###
+# See if we can use colors.
+
+    autoload zsh/terminfo
+    for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE; do
+    eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
+    eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
+    (( count = $count + 1 ))
+    done
+    PR_NO_COLOUR="%{$terminfo[sgr0]%}"
+
+
+###
+# See if we can use extended characters to look nicer.
+
+    typeset -A altchar
+#    set -A altchar "${(s..)terminfo[acsc]}"
+    PR_SET_CHARSET="%{$terminfo[enacs]%}"
+    PR_HBAR=${altchar[q]:--}
+    PR_ULCORNER=${altchar[l]:--}
+    PR_LLCORNER=${altchar[m]:--}
+    PR_LRCORNER=${altchar[j]:--}
+    PR_URCORNER=${altchar[k]:--}
+
+    ###
+    # Modify Git prompt
+    ZSH_THEME_GIT_PROMPT_PREFIX=" ["
+    ZSH_THEME_GIT_PROMPT_SUFFIX="]"
+    ###
+    # Modify RVM prompt
+    ZSH_THEME_RVM_PROMPT_PREFIX=" ["
+    ZSH_THEME_RVM_PROMPT_SUFFIX="]"
+
+
+###
+# Decide if we need to set titlebar text.
+
+    case $TERM in
+    xterm*|*rxvt*)
+        PR_TITLEBAR=$'%{\e]0;%(!.-=*[ROOT]*=- | .)%n@%M:%~ $(git_prompt_info) $(rvm_prompt_info) | ${COLUMNS}x${LINES} | %y\a%}'
+        ;;
+    screen)
+        PR_TITLEBAR=$'%{\e_screen \005 (\005t) | %(!.-=[ROOT]=- | .)%n@%m:%~ | ${COLUMNS}x${LINES} | %y\e\\%}'
+        ;;
+    *)
+        PR_TITLEBAR=''
+        ;;
+    esac
+
+
+###
+# Decide whether to set a screen title
+    if [[ "$TERM" == "screen" ]]; then
+        PR_STITLE=$'%{\ekzsh\e\\%}'
+    else
+        PR_STITLE=''
+    fi
+
+###
+# Finally, the prompt.
+#
+    PROMPT='$PR_SET_CHARSET$PR_STITLE${(e)PR_TITLEBAR}\
+$PR_RED$PR_HBAR<\
+$PR_BLUE%(!.$PR_RED%SROOT%s.%n)$PR_GREEN@$PR_BLUE%M:$PR_GREEN%$PR_PWDLEN<...<%~$PR_CYAN$(git_prompt_info)$(rvm_prompt_info)\
+$PR_RED>$PR_HBAR$PR_SPACE${(e)PR_FILLBAR}\
+$PR_RED$PR_HBAR<\
+$PR_GREEN%l$PR_RED>$PR_HBAR\
+
+$PR_RED$PR_HBAR<\
+%(?..$PR_LIGHT_RED%?$PR_BLUE:)\
+$PR_LIGHT_BLUE%(!.$PR_RED.$PR_WHITE)%#$PR_RED>$PR_HBAR\
+$PR_NO_COLOUR '
+
+}
+
+setprompt
+PROMPT='%{$fg[green]%}%~%{$fg_bold[blue]%}$(git_prompt_info)%{$reset_color%} '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"
+ZSH_THEME_GIT_PROMPT_DIRTY=" ✗"
+ZSH_THEME_GIT_PROMPT_CLEAN=" ✔"
+PROMPT='%{$fg_bold[green]%}%h %{$fg[cyan]%}%2~ %{$fg_bold[blue]%}$(git_prompt_info) %{$reset_color%}» '
+
+ZSH_THEME_GIT_PROMPT_PREFIX="git:(%{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%}) %{$fg[yellow]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+
+# smt.zsh-theme, based on dogenpunk by Matthew Nelson.
+
+MODE_INDICATOR="%{$fg_bold[red]%}❮%{$reset_color%}%{$fg[red]%}❮❮%{$reset_color%}"
+local return_status="%{$fg[red]%}%(?..⏎)%{$reset_color%} "
+
+ZSH_THEME_GIT_PROMPT_PREFIX="|"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$fg_bold[red]%}!%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✓%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+
+# Format for git_prompt_long_sha() and git_prompt_short_sha()
+ZSH_THEME_GIT_PROMPT_SHA_BEFORE="➤ %{$fg_bold[yellow]%}"
+ZSH_THEME_GIT_PROMPT_SHA_AFTER="%{$reset_color%}"
+
+function prompt_char() {
+  git branch >/dev/null 2>/dev/null && echo "%{$fg[green]%}±%{$reset_color%}" && return
+  hg root >/dev/null 2>/dev/null && echo "%{$fg_bold[red]%}☿%{$reset_color%}" && return
+  darcs show repo >/dev/null 2>/dev/null && echo "%{$fg_bold[green]%}❉%{$reset_color%}" && return
+  echo "%{$fg[cyan]%}◯%{$reset_color%}"
+}
+
+# Colors vary depending on time lapsed.
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$fg[green]%}"
+ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$fg[yellow]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$fg[red]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$fg[cyan]%}"
+
+# Determine the time since last commit. If branch is clean,
+# use a neutral color, otherwise colors will vary according to time.
+function git_time_since_commit() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        # Only proceed if there is actually a commit.
+        if [[ $(git log 2>&1 > /dev/null | grep -c "^fatal: bad default revision") == 0 ]]; then
+            # Get the last commit.
+            last_commit=`git log --pretty=format:'%at' -1 2> /dev/null`
+            now=`date +%s`
+            seconds_since_last_commit=$((now-last_commit))
+
+            # Totals
+            MINUTES=$((seconds_since_last_commit / 60))
+            HOURS=$((seconds_since_last_commit/3600))
+
+            # Sub-hours and sub-minutes
+            DAYS=$((seconds_since_last_commit / 86400))
+            SUB_HOURS=$((HOURS % 24))
+            SUB_MINUTES=$((MINUTES % 60))
+
+            if [[ -n $(git status -s 2> /dev/null) ]]; then
+                if [ "$MINUTES" -gt 30 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG"
+                elif [ "$MINUTES" -gt 10 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM"
+                else
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT"
+                fi
+            else
+                COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            fi
+
+            if [ "$HOURS" -gt 24 ]; then
+                echo "[$COLOR${DAYS}d${SUB_HOURS}h${SUB_MINUTES}m%{$reset_color%}]"
+            elif [ "$MINUTES" -gt 60 ]; then
+                echo "[$COLOR${HOURS}h${SUB_MINUTES}m%{$reset_color%}]"
+            else
+                echo "[$COLOR${MINUTES}m%{$reset_color%}]"
+            fi
+        else
+            COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            echo "[$COLOR~]"
+        fi
+    fi
+}
+
+PROMPT='
+%{$fg[blue]%}%m%{$reset_color%} 福 %{$fg[cyan]%}%~ %{$reset_color%}$(git_prompt_short_sha)$(git_prompt_info)
+%{$fg[red]%}%!%{$reset_color%} $(prompt_char) : '
+
+RPROMPT='${return_status}$(git_time_since_commit)$(git_prompt_status)%{$reset_color%}'
+#!/usr/bin/env zsh 
+#local return_code="%(?..%{$fg[red]%}%? ↵%{$reset_color%})"
+
+setopt promptsubst
+
+autoload -U add-zsh-hook
+ROOT_ICON_COLOR=$FG[111]
+MACHINE_NAME_COLOR=$FG[208]
+PROMPT_SUCCESS_COLOR=$FG[103]
+PROMPT_FAILURE_COLOR=$FG[124]
+PROMPT_VCS_INFO_COLOR=$FG[242]
+PROMPT_PROMPT=$FG[208]
+GIT_DIRTY_COLOR=$FG[124]
+GIT_CLEAN_COLOR=$FG[148]
+GIT_PROMPT_INFO=$FG[148]
+
+# Hash
+ROOT_ICON="# "
+if [[ $EUID -ne 0 ]] ; then
+	ROOT_ICON=""
+fi
+
+PROMPT='%{$ROOT_ICON_COLOR%}$ROOT_ICON%{$reset_color%}%{$MACHINE_NAME_COLOR%}%m➜  %{$reset_color%}%{$PROMPT_SUCCESS_COLOR%}%c%{$reset_color%} %{$GIT_PROMPT_INFO%}$(git_prompt_info)%{$GIT_DIRTY_COLOR%}$(git_prompt_status) %{$reset_color%}%{$PROMPT_PROMPT%}ᐅ %{$reset_color%} '
+
+#RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=": "
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$GIT_PROMPT_INFO%} :"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$GIT_DIRTY_COLOR%}✘"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$GIT_CLEAN_COLOR%}✔"
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$FG[103]%}✚%{$rset_color%}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$FG[103]%}✹%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$FG[103]%}✖%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$FG[103]%}➜%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$FG[103]%}═%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$FG[103]%}✭%{$reset_color%}"
+# sorin.zsh-theme
+# screenshot: http://i.imgur.com/aipDQ.png
+
+if [[ "$TERM" != "dumb" ]] && [[ "$DISABLE_LS_COLORS" != "true" ]]; then
+  MODE_INDICATOR="%{$fg_bold[red]%}❮%{$reset_color%}%{$fg[red]%}❮❮%{$reset_color%}"
+  local return_status="%{$fg[red]%}%(?..⏎)%{$reset_color%}"
+  
+  PROMPT='%{$fg[cyan]%}%c$(git_prompt_info) %(!.%{$fg_bold[red]%}#.%{$fg_bold[green]%}❯)%{$reset_color%} '
+
+  ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[blue]%}git%{$reset_color%}:%{$fg[red]%}"
+  ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+  ZSH_THEME_GIT_PROMPT_DIRTY=""
+  ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+  RPROMPT='${return_status}$(git_prompt_status)%{$reset_color%}'
+
+  ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%} ✚"
+  ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[blue]%} ✹"
+  ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖"
+  ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[magenta]%} ➜"
+  ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[yellow]%} ═"
+  ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭"
+else 
+  MODE_INDICATOR="❮❮❮"
+  local return_status="%(?::⏎)"
+  
+  PROMPT='%c$(git_prompt_info) %(!.#.❯) '
+
+  ZSH_THEME_GIT_PROMPT_PREFIX=" git:"
+  ZSH_THEME_GIT_PROMPT_SUFFIX=""
+  ZSH_THEME_GIT_PROMPT_DIRTY=""
+  ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+  RPROMPT='${return_status}$(git_prompt_status)'
+
+  ZSH_THEME_GIT_PROMPT_ADDED=" ✚"
+  ZSH_THEME_GIT_PROMPT_MODIFIED=" ✹"
+  ZSH_THEME_GIT_PROMPT_DELETED=" ✖"
+  ZSH_THEME_GIT_PROMPT_RENAMED=" ➜"
+  ZSH_THEME_GIT_PROMPT_UNMERGED=" ═"
+  ZSH_THEME_GIT_PROMPT_UNTRACKED=" ✭"
+fi
+# zsh theme requires 256 color enabled terminal
+# i.e TERM=xterm-256color
+# Preview - http://www.flickr.com/photos/adelcampo/4556482563/sizes/o/
+# based on robbyrussell's shell but louder!
+
+PROMPT='%{$fg_bold[blue]%}$(git_prompt_info) %F{208}%c%f
+%{$fg_bold[white]%}%# %{$reset_color%}'
+RPROMPT='%B%F{208}%n%f%{$fg_bold[white]%}@%F{039}%m%f%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%F{154}±|%f%F{124}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}%B✘%b%F{154}|%f%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %{$fg[green]%}✔%F{154}|"
+# prompt style and colors based on Steve Losh's Prose theme:
+# http://github.com/sjl/oh-my-zsh/blob/master/themes/prose.zsh-theme
+#
+# vcs_info modifications from Bart Trojanowski's zsh prompt:
+# http://www.jukie.net/bart/blog/pimping-out-zsh-prompt
+#
+# git untracked files modification from Brian Carper:
+# http://briancarper.net/blog/570/git-info-in-your-zsh-prompt
+
+export VIRTUAL_ENV_DISABLE_PROMPT=1
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('%F{blue}`basename $VIRTUAL_ENV`%f') '
+}
+PR_GIT_UPDATE=1
+
+setopt prompt_subst
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+#use extended color palette if available
+if [[ $terminfo[colors] -ge 256 ]]; then
+    turquoise="%F{81}"
+    orange="%F{166}"
+    purple="%F{135}"
+    hotpink="%F{161}"
+    limegreen="%F{118}"
+else
+    turquoise="%F{cyan}"
+    orange="%F{yellow}"
+    purple="%F{magenta}"
+    hotpink="%F{red}"
+    limegreen="%F{green}"
+fi
+
+# enable VCS systems you use
+zstyle ':vcs_info:*' enable git svn
+
+# check-for-changes can be really slow.
+# you should disable it, if you work with large repositories
+zstyle ':vcs_info:*:prompt:*' check-for-changes true
+
+# set formats
+# %b - branchname
+# %u - unstagedstr (see below)
+# %c - stagedstr (see below)
+# %a - action (e.g. rebase-i)
+# %R - repository path
+# %S - path in the repository
+PR_RST="%f"
+FMT_BRANCH="(%{$turquoise%}%b%u%c${PR_RST})"
+FMT_ACTION="(%{$limegreen%}%a${PR_RST})"
+FMT_UNSTAGED="%{$orange%}●"
+FMT_STAGED="%{$limegreen%}●"
+
+zstyle ':vcs_info:*:prompt:*' unstagedstr   "${FMT_UNSTAGED}"
+zstyle ':vcs_info:*:prompt:*' stagedstr     "${FMT_STAGED}"
+zstyle ':vcs_info:*:prompt:*' actionformats "${FMT_BRANCH}${FMT_ACTION}"
+zstyle ':vcs_info:*:prompt:*' formats       "${FMT_BRANCH}"
+zstyle ':vcs_info:*:prompt:*' nvcsformats   ""
+
+
+function steeef_preexec {
+    case "$(history $HISTCMD)" in
+        *git*)
+            PR_GIT_UPDATE=1
+            ;;
+        *svn*)
+            PR_GIT_UPDATE=1
+            ;;
+    esac
+}
+add-zsh-hook preexec steeef_preexec
+
+function steeef_chpwd {
+    PR_GIT_UPDATE=1
+}
+add-zsh-hook chpwd steeef_chpwd
+
+function steeef_precmd {
+    if [[ -n "$PR_GIT_UPDATE" ]] ; then
+        # check for untracked files or updated submodules, since vcs_info doesn't
+        if git ls-files --other --exclude-standard 2> /dev/null | grep -q "."; then
+            PR_GIT_UPDATE=1
+            FMT_BRANCH="(%{$turquoise%}%b%u%c%{$hotpink%}●${PR_RST})"
+        else
+            FMT_BRANCH="(%{$turquoise%}%b%u%c${PR_RST})"
+        fi
+        zstyle ':vcs_info:*:prompt:*' formats "${FMT_BRANCH} "
+
+        vcs_info 'prompt'
+        PR_GIT_UPDATE=
+    fi
+}
+add-zsh-hook precmd steeef_precmd
+
+PROMPT=$'
+%{$purple%}%n${PR_RST} at %{$orange%}%m${PR_RST} in %{$limegreen%}%~${PR_RST} $vcs_info_msg_0_$(virtualenv_info)
+$ '
+# terminal coloring
+export CLICOLOR=1
+export LSCOLORS=dxFxCxDxBxegedabagacad
+
+local git_branch='$(git_prompt_info)%{$reset_color%}$(git_remote_status)'
+
+PROMPT="%{$fg[green]%}╭─%n@%m %{$reset_color%}%{$fg[yellow]%}in %~ %{$reset_color%}${git_branch}
+%{$fg[green]%}╰\$ %{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[yellow]%}on "
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$reset_color%}%{$fg[red]%} ✘ %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%} ✔ %{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_DETAILED=true
+ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_SUFFIX="%{$fg[yellow]%})%{$reset_color%}"
+
+ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE=" +"
+ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR=%{$fg[green]%}
+
+ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE=" -"
+ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR=%{$fg[red]%}
+
+# Git-centric variation of the "fishy" theme.
+# See screenshot at http://ompldr.org/vOHcwZg
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%}+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[magenta]%}!"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%}-"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%}>"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[cyan]%}#"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[yellow]%}?"
+
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=" "
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+local user_color='green'
+test $UID -eq 0 && user_color='red'
+
+PROMPT='%(?..%{$fg_bold[red]%}exit %?
+%{$reset_color%})'\
+'%{$bold_color%}$(git_prompt_status)%{$reset_color%}'\
+'$(git_prompt_info)'\
+'%{$fg[$user_color]%}%~%{$reset_color%}'\
+'%(!.#.>) '
+
+PROMPT2='%{$fg[red]%}\ %{$reset_color%}'
+# Sunrise theme for oh-my-zsh
+# Intended to be used with Solarized: http://ethanschoonover.com/solarized
+
+# Color shortcuts
+R=$fg_no_bold[red]
+G=$fg_no_bold[green]
+M=$fg_no_bold[magenta]
+Y=$fg_no_bold[yellow]
+B=$fg_no_bold[blue]
+RESET=$reset_color
+
+if [ "$USER" = "root" ]; then
+    PROMPTCOLOR="%{$R%}" PROMPTPREFIX="-!-";
+else
+    PROMPTCOLOR="" PROMPTPREFIX="---";
+fi
+
+local return_code="%(?..%{$R%}%? ↵%{$RESET%})"
+
+# Get the status of the working tree (copied and modified from git.zsh)
+custom_git_prompt_status() {
+  INDEX=$(git status --porcelain 2> /dev/null)
+  STATUS=""
+  # Non-staged
+  if $(echo "$INDEX" | grep '^?? ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_UNTRACKED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^UU ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_UNMERGED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^ D ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_DELETED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^.M ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_MODIFIED$STATUS"
+  elif $(echo "$INDEX" | grep '^AM ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_MODIFIED$STATUS"
+  elif $(echo "$INDEX" | grep '^ T ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_MODIFIED$STATUS"
+  fi
+  # Staged
+  if $(echo "$INDEX" | grep '^D  ' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_STAGED_DELETED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^R' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_STAGED_RENAMED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^M' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_STAGED_MODIFIED$STATUS"
+  fi
+  if $(echo "$INDEX" | grep '^A' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_PROMPT_STAGED_ADDED$STATUS"
+  fi
+
+  if $(echo -n "$STATUS" | grep '.*' &> /dev/null); then
+    STATUS="$ZSH_THEME_GIT_STATUS_PREFIX$STATUS"
+  fi
+
+  echo $STATUS
+}
+
+# get the name of the branch we are on (copied and modified from git.zsh)
+function custom_git_prompt() {
+  ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+  echo "$ZSH_THEME_GIT_PROMPT_PREFIX${ref#refs/heads/}$(parse_git_dirty)$(git_prompt_ahead)$(custom_git_prompt_status)$ZSH_THEME_GIT_PROMPT_SUFFIX"
+}
+
+# %B sets bold text
+PROMPT='%B$PROMPTPREFIX %2~ $(custom_git_prompt)%{$M%}%B»%b%{$RESET%} '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$Y%}‹"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$Y%}›%{$RESET%} "
+
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$R%}*"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$B%}➔"
+
+
+ZSH_THEME_GIT_STATUS_PREFIX=" "
+
+# Staged
+ZSH_THEME_GIT_PROMPT_STAGED_ADDED="%{$G%}A"
+ZSH_THEME_GIT_PROMPT_STAGED_MODIFIED="%{$G%}M"
+ZSH_THEME_GIT_PROMPT_STAGED_RENAMED="%{$G%}R"
+ZSH_THEME_GIT_PROMPT_STAGED_DELETED="%{$G%}D"
+
+# Not-staged
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$R%}?"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$R%}M"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$R%}D"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$R%}UU"
+# Grab the current version of ruby in use: [ruby-1.8.7]
+JARIN_CURRENT_RUBY_="%{$fg[white]%}[%{$fg[red]%}\$(ruby_prompt_info)%{$fg[white]%}]%{$reset_color%}"
+
+# Grab the current filepath, use shortcuts: ~/Desktop
+# Append the current git branch, if in a git repository
+JARIN_CURRENT_LOCA_="%{$fg_bold[cyan]%}%~\$(git_prompt_info)%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[white]%} <%{$fg[magenta]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$fg[white]%}"
+
+# Do nothing if the branch is clean (no changes).
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[white]%}>"
+
+# Add a yellow ✗ if the branch is dirty
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[white]%}> %{$fg[yellow]%}✗"
+
+# Put it all together!
+PROMPT="$JARIN_CURRENT_RUBY_ $JARIN_CURRENT_LOCA_ "
+
+function prompt_char {
+    git branch >/dev/null 2>/dev/null && echo '±' && return
+    hg root >/dev/null 2>/dev/null && echo 'Hg' && return
+    echo '○'
+}
+
+function virtualenv_info {
+    [[ -n "$VIRTUAL_ENV" ]] && echo '('${VIRTUAL_ENV:t}') '
+}
+
+function ruby_prompt {
+    if (( $+commands[rvm-prompt] )); then
+        print -n $ZSH_THEME_RUBY_PROMPT_PREFIX
+        print -n $(~/.rvm/bin/rvm-prompt)
+        print -n $ZSH_THEME_RUBY_PROMPT_SUFFIX
+    elif (( $+commands[rbenv] )); then
+        print -n $ZSH_THEME_RUBY_PROMPT_PREFIX
+        print -n $(rbenv version | sed -e "s/ (set.*$//")
+        print -n $ZSH_THEME_RUBY_PROMPT_SUFFIX
+    fi
+    return 0
+}
+
+PROMPT='%F{magenta}%n%f at %F{yellow}%m%f in %B%F{green}%~%f%b$(git_prompt_info)$(ruby_prompt)
+$(virtualenv_info) $(prompt_char) '
+
+ZSH_THEME_GIT_PROMPT_PREFIX=' on %F{magenta}'
+ZSH_THEME_GIT_PROMPT_SUFFIX='%f'
+ZSH_THEME_GIT_PROMPT_DIRTY='%F{green}!'
+ZSH_THEME_GIT_PROMPT_UNTRACKED='%F{green}?'
+ZSH_THEME_GIT_PROMPT_CLEAN=''
+
+ZSH_THEME_RUBY_PROMPT_PREFIX=' using %F{red}'
+ZSH_THEME_RUBY_PROMPT_SUFFIX='%f'
+#
+# PROMPT
+#
+PROMPT_BRACKET_BEGIN='%{$fg_bold[white]%}['
+PROMPT_HOST='%{$fg_bold[cyan]%}%m'
+PROMPT_SEPARATOR='%{$reset_color%}:'
+PROMPT_DIR='%{$fg_bold[yellow]%}%c'
+PROMPT_BRACKET_END='%{$fg_bold[white]%}]'
+
+PROMPT_USER='%{$fg_bold[white]%}%n'
+PROMPT_SIGN='%{$reset_color%}%#'
+
+GIT_PROMPT_INFO='$(git_prompt_info)'
+
+# My current prompt looks like:
+# [host:current_dir] (git_prompt_info)
+# [username]%
+PROMPT="${PROMPT_BRACKET_BEGIN}${PROMPT_HOST}${PROMPT_SEPARATOR}${PROMPT_DIR}${PROMPT_BRACKET_END}${GIT_PROMPT_INFO}
+${PROMPT_BRACKET_BEGIN}${PROMPT_USER}${PROMPT_BRACKET_END}${PROMPT_SIGN} "
+
+#
+# Git repository
+#
+ZSH_THEME_GIT_PROMPT_PREFIX=" on %{$fg[magenta]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[green]%}!"
+ZSH_THEME_GIT_PROMPT_CLEAN=''
+PROMPT='%(?,%{$fg[green]%},%{$fg[red]%}) %% '
+# RPS1='%{$fg[blue]%}%~%{$reset_color%} '
+RPS1='%{$fg[white]%}%2~$(git_prompt_info) %{$fg_bold[blue]%}%m%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%} ⚡%{$fg[yellow]%}"
+# Comment
+
+PROMPT='%{$fg[magenta]%}[%c] %{$reset_color%}'
+
+RPROMPT='%{$fg[magenta]%}$(git_prompt_info)%{$reset_color%} $(git_prompt_status)%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX=""
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_DIRTY=""
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[cyan]%} ✈"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%} ✭"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✗"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%} ➦"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[magenta]%} ✂"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[grey]%} ✱"ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}⚡"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+function prompt_char {
+	if [ $UID -eq 0 ]; then echo "%{$fg[red]%}#%{$reset_color%}"; else echo $; fi
+}
+
+PROMPT='%(?, ,%{$fg[red]%}FAIL: $?%{$reset_color%}
+)
+%{$fg[magenta]%}%n%{$reset_color%}@%{$fg[yellow]%}%m%{$reset_color%}: %{$fg_bold[blue]%}%~%{$reset_color%}$(git_prompt_info)
+%_$(prompt_char) '
+
+RPROMPT='%{$fg[green]%}[%*]%{$reset_color%}'
+ZSH_THEME_GIT_PROMPT_PREFIX=" %{$fg[green]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[red]%}⚡"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+
+function prompt_char {
+	if [ $UID -eq 0 ]; then echo "%{$fg[red]%}#%{$reset_color%}"; else echo $; fi
+}
+
+PROMPT='%(?,,%{$fg[red]%}FAIL: $?%{$reset_color%}
+)%{$fg[magenta]%}%n%{$reset_color%}@%{$fg[yellow]%}%m%{$reset_color%}: %{$fg_bold[blue]%}%~%{$reset_color%}$(git_prompt_info) %_$(prompt_char) '
+
+RPROMPT='%{$fg[green]%}[%*]%{$reset_color%}'
+PROMPT='%{$fg_no_bold[cyan]%}%n%{$fg_no_bold[magenta]%}➜%{$fg_no_bold[green]%}%3~$(git_prompt_info)%{$reset_color%}» '
+RPROMPT='[%*]'
+
+# git theming
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}(%{$fg_no_bold[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[blue]%})"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[yellow]%}✗%{$fg_bold[blue]%})"
+
+# LS colors, made with http://geoff.greer.fm/lscolors/
+export LSCOLORS="Gxfxcxdxbxegedabagacad"
+export LS_COLORS='no=00:fi=00:di=01;34:ln=00;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=41;33;01:ex=00;32:*.cmd=00;32:*.exe=01;32:*.com=01;32:*.bat=01;32:*.btm=01;32:*.dll=01;32:*.tar=00;31:*.tbz=00;31:*.tgz=00;31:*.rpm=00;31:*.deb=00;31:*.arj=00;31:*.taz=00;31:*.lzh=00;31:*.lzma=00;31:*.zip=00;31:*.zoo=00;31:*.z=00;31:*.Z=00;31:*.gz=00;31:*.bz2=00;31:*.tb2=00;31:*.tz2=00;31:*.tbz2=00;31:*.avi=01;35:*.bmp=01;35:*.fli=01;35:*.gif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mng=01;35:*.mov=01;35:*.mpg=01;35:*.pcx=01;35:*.pbm=01;35:*.pgm=01;35:*.png=01;35:*.ppm=01;35:*.tga=01;35:*.tif=01;35:*.xbm=01;35:*.xpm=01;35:*.dl=01;35:*.gl=01;35:*.wmv=01;35:*.aiff=00;32:*.au=00;32:*.mid=00;32:*.mp3=00;32:*.ogg=00;32:*.voc=00;32:*.wav=00;32:'# trapd00r.zsh-theme
+#
+# This theme needs a terminal supporting 256 colors as well as unicode. It also
+# needs the script that splits up the current path and makes it fancy as located
+# here: https://github.com/trapd00r/utils/blob/master/zsh_path
+#
+# By default it spans over two lines like so:
+#
+# scp1@shiva:pts/9-> /home » scp1 (0)
+# >
+#
+# that's  user@host:pts/-> splitted path (return status)
+#
+# If the current directory is a git repository, we span 3 lines;
+#
+# git❨ master ❩ DIRTY
+# scp1@shiva:pts/4-> /home » scp1 » dev » utils (0)
+# >
+
+autoload -U add-zsh-hook
+autoload -Uz vcs_info
+
+local c0=$( printf "\e[m")
+local c1=$( printf "\e[38;5;245m")
+local c2=$( printf "\e[38;5;250m")
+local c3=$( printf "\e[38;5;242m")
+local c4=$( printf "\e[38;5;197m")
+local c5=$( printf "\e[38;5;225m")
+local c6=$( printf "\e[38;5;240m")
+local c7=$( printf "\e[38;5;242m")
+local c8=$( printf "\e[38;5;244m")
+local c9=$( printf "\e[38;5;162m")
+local c10=$(printf "\e[1m")
+local c11=$(printf "\e[38;5;208m\e[1m")
+local c12=$(printf "\e[38;5;142m\e[1m")
+local c13=$(printf "\e[38;5;196m\e[1m")
+
+
+# We don't want to use the extended colorset in the TTY / VC.
+if [ "$TERM" = "linux" ]; then
+    c1=$( printf "\e[34;1m")
+    c2=$( printf "\e[35m")
+    c3=$( printf "\e[31m")
+    c4=$( printf "\e[31;1m")
+    c5=$( printf "\e[32m")
+    c6=$( printf "\e[32;1m")
+    c7=$( printf "\e[33m")
+    c8=$( printf "\e[33;1m")
+    c9=$( printf "\e[34m")
+
+    c11=$(printf "\e[35;1m")
+    c12=$(printf "\e[36m")
+    c13=$(printf "\e[31;1m")
+fi
+
+zstyle ':vcs_info:*' actionformats \
+    '%{$c8%}(%f%s)%{$c7%}-%F{5}[%F{2}%b%F{3}|%F{1}%a%F{5}]%f '
+
+zstyle ':vcs_info:*' formats \
+    "%{$c8%}%s%%{$c7%}❨ %{$c9%}%{$c11%}%b%{$c7%} ❩%{$reset_color%}%f "
+
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{3}%r'
+zstyle ':vcs_info:*' enable git
+
+add-zsh-hook precmd prompt_jnrowe_precmd
+
+prompt_jnrowe_precmd () {
+  vcs_info
+  if [ "${vcs_info_msg_0_}" = "" ]; then
+    dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$(zsh_path)%} %{$c0%}(%{$c5%}%?%{$c0%})"
+    PROMPT='%{$fg_bold[green]%}%p%{$reset_color%}${vcs_info_msg_0_}${dir_status} ${ret_status}%{$reset_color%}
+> '
+
+# modified, to be committed
+  elif [[ $(git diff --cached --name-status 2>/dev/null ) != "" ]]; then
+    dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$(zsh_path)%} %{$c0%}(%{$c5%}%?%{$c0%})"
+    PROMPT='${vcs_info_msg_0_}%{$30%} %{$bg_bold[red]%}%{$fg_bold[cyan]%}C%{$fg_bold[black]%}OMMIT%{$reset_color%}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status}%{$reset_color%}
+> '
+
+  elif [[ $(git diff --name-status 2>/dev/null ) != "" ]]; then
+    dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$(zsh_path)%} %{$c0%}(%{$c5%}%?%{$c0%})"
+    PROMPT='${vcs_info_msg_0_}%{$bg_bold[red]%}%{$fg_bold[blue]%}D%{$fg_bold[black]%}IRTY%{$reset_color%}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status}%{$reset_color%}
+%{$c13%}>%{$c0%} '
+  else
+    dir_status="%{$c1%}%n%{$c4%}@%{$c2%}%m%{$c0%}:%{$c3%}%l%{$c6%}->%{$(zsh_path)%} %{$c0%}(%{$c5%}%?%{$c0%})"
+    PROMPT='${vcs_info_msg_0_}
+%{$fg_bold[green]%}%p%{$reset_color%}${dir_status}%{$reset_color%}
+> '
+fi
+}
+
+#  vim: set ft=zsh sw=2 et tw=0:
+# On a mac with snow leopard, for nicer terminal colours:
+
+# - Install SIMBL: http://www.culater.net/software/SIMBL/SIMBL.php
+# - Download'Terminal-Colours': http://bwaht.net/code/TerminalColours.bundle.zip
+# - Place that bundle in ~/Library/Application\ Support/SIMBL/Plugins (create that folder if it doesn't exist)
+# - Open Terminal preferences. Go to Settings -> Text -> More
+# - Change default colours to your liking.
+# 
+# Here are the colours from Textmate's Monokai theme:
+# 
+# Black: 0, 0, 0
+# Red: 229, 34, 34
+# Green: 166, 227, 45
+# Yellow: 252, 149, 30
+# Blue: 196, 141, 255
+# Magenta: 250, 37, 115
+# Cyan: 103, 217, 240
+# White: 242, 242, 242
+
+# Thanks to Steve Losh: http://stevelosh.com/blog/2009/03/candy-colored-terminal/
+
+# The prompt
+
+PROMPT='%{$fg[magenta]%}[%c] %{$reset_color%}'
+
+# The right-hand prompt
+
+RPROMPT='${time} %{$fg[magenta]%}$(git_prompt_info)%{$reset_color%}$(git_prompt_status)%{$reset_color%}$(git_prompt_ahead)%{$reset_color%}'
+
+# Add this at the start of RPROMPT to include rvm info showing ruby-version@gemset-name
+# %{$fg[yellow]%}$(~/.rvm/bin/rvm-prompt)%{$reset_color%} 
+
+# local time, color coded by last return code
+time_enabled="%(?.%{$fg[green]%}.%{$fg[red]%})%*%{$reset_color%}"
+time_disabled="%{$fg[green]%}%*%{$reset_color%}"
+time=$time_enabled
+
+ZSH_THEME_GIT_PROMPT_PREFIX=" ☁  %{$fg[red]%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[yellow]%} ☂" # Ⓓ
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[cyan]%} ✭" # ⓣ
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%} ☀" # Ⓞ
+
+ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[cyan]%} ✚" # ⓐ ⑃
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%} ⚡"  # ⓜ ⑁
+ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%} ✖" # ⓧ ⑂
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%} ➜" # ⓡ ⑄
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[magenta]%} ♒" # ⓤ ⑊
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$fg[blue]%} 𝝙"
+
+# More symbols to choose from:
+# ☀ ✹ ☄ ♆ ♀ ♁ ♐ ♇ ♈ ♉ ♚ ♛ ♜ ♝ ♞ ♟ ♠ ♣ ⚢ ⚲ ⚳ ⚴ ⚥ ⚤ ⚦ ⚒ ⚑ ⚐ ♺ ♻ ♼ ☰ ☱ ☲ ☳ ☴ ☵ ☶ ☷
+# ✡ ✔ ✖ ✚ ✱ ✤ ✦ ❤ ➜ ➟ ➼ ✂ ✎ ✐ ⨀ ⨁ ⨂ ⨍ ⨎ ⨏ ⨷ ⩚ ⩛ ⩡ ⩱ ⩲ ⩵  ⩶ ⨠ 
+# ⬅ ⬆ ⬇ ⬈ ⬉ ⬊ ⬋ ⬒ ⬓ ⬔ ⬕ ⬖ ⬗ ⬘ ⬙ ⬟  ⬤ 〒 ǀ ǁ ǂ ĭ Ť Ŧ
+
+# Determine if we are using a gemset.
+function rvm_gemset() {
+    GEMSET=`rvm gemset list | grep '=>' | cut -b4-`
+    if [[ -n $GEMSET ]]; then
+        echo "%{$fg[yellow]%}$GEMSET%{$reset_color%}|"
+    fi 
+}
+
+# Determine the time since last commit. If branch is clean,
+# use a neutral color, otherwise colors will vary according to time.
+function git_time_since_commit() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        # Only proceed if there is actually a commit.
+        if [[ $(git log 2>&1 > /dev/null | grep -c "^fatal: bad default revision") == 0 ]]; then
+            # Get the last commit.
+            last_commit=`git log --pretty=format:'%at' -1 2> /dev/null`
+            now=`date +%s`
+            seconds_since_last_commit=$((now-last_commit))
+
+            # Totals
+            MINUTES=$((seconds_since_last_commit / 60))
+            HOURS=$((seconds_since_last_commit/3600))
+           
+            # Sub-hours and sub-minutes
+            DAYS=$((seconds_since_last_commit / 86400))
+            SUB_HOURS=$((HOURS % 24))
+            SUB_MINUTES=$((MINUTES % 60))
+            
+            if [[ -n $(git status -s 2> /dev/null) ]]; then
+                if [ "$MINUTES" -gt 30 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG"
+                elif [ "$MINUTES" -gt 10 ]; then
+                    COLOR="$ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM"
+                else
+                    COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT"
+                fi
+            else
+                COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            fi
+
+            if [ "$HOURS" -gt 24 ]; then
+                echo "($(rvm_gemset)$COLOR${DAYS}d${SUB_HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            elif [ "$MINUTES" -gt 60 ]; then
+                echo "($(rvm_gemset)$COLOR${HOURS}h${SUB_MINUTES}m%{$reset_color%}|"
+            else
+                echo "($(rvm_gemset)$COLOR${MINUTES}m%{$reset_color%}|"
+            fi
+        else
+            COLOR="$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL"
+            echo "($(rvm_gemset)$COLOR~|"
+        fi
+    fi
+}
+PROMPT='%{${fg_bold[yellow]}%}%n%{$reset_color%}%{${fg[yellow]}%}@%m%{$reset_color%} $(git_prompt_info)%(?,,%{${fg_bold[white]}%}[%?]%{$reset_color%} )%{$fg[yellow]%}%#%{$reset_color%} '
+RPROMPT='%{$fg[green]%}%~%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[blue]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%})%{$fg[red]%}✗%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+PROMPT='$(git_prompt_info)%(?,,%{${fg_bold[white]}%}[%?]%{$reset_color%} )%{$fg[yellow]%}%#%{$reset_color%} '
+RPROMPT='%{$fg[green]%}%~%{$reset_color%}'
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[blue]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[blue]%})%{$fg[red]%}⚡%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[blue]%}["
+ZSH_THEME_GIT_PROMPT_SUFFIX="]%{$reset_color%} "
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg_bold[red]%} x%{$fg_bold[blue]%}"
+
+PROMPT='%{$(git_prompt_info)%}%{$fg_bold[green]%}{%{$(rvm current 2>/dev/null || rbenv version-name 2>/dev/null)%}}%{$reset_color%} %{$fg[cyan]%}%c%{$reset_color%} '
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+PROMPT=$'%{\e[0;34m%}%B┌─[%b%{\e[0m%}%{\e[1;32m%}%n%{\e[1;30m%}@%{\e[0m%}%{\e[0;36m%}%m%{\e[0;34m%}%B]%b%{\e[0m%} - %b%{\e[0;34m%}%B[%b%{\e[1;37m%}%~%{\e[0;34m%}%B]%b%{\e[0m%} - %{\e[0;34m%}%B[%b%{\e[0;33m%}'%D{"%a %b %d, %H:%M"}%b$'%{\e[0;34m%}%B]%b%{\e[0m%}
+%{\e[0;34m%}%B└─%B[%{\e[1;35m%}$%{\e[0;34m%}%B] <$(git_prompt_info)>%{\e[0m%}%b '
+PS2=$' \e[0;34m%}%B>%{\e[0m%}%b '
+# user, host, full path, and time/date
+# on two lines for easier vgrepping
+# entry in a nice long thread on the Arch Linux forums: http://bbs.archlinux.org/viewtopic.php?pid=521888#p521888
+PROMPT=$'%{\e[0;34m%}%B┌─[%b%{\e[0m%}%{\e[1;32m%}%n%{\e[1;30m%}@%{\e[0m%}%{\e[0;36m%}%m%{\e[0;34m%}%B]%b%{\e[0m%} - %b%{\e[0;34m%}%B[%b%{\e[1;37m%}%~%{\e[0;34m%}%B]%b%{\e[0m%} - %{\e[0;34m%}%B[%b%{\e[0;33m%}'%D{"%a %b %d, %H:%M"}%b$'%{\e[0;34m%}%B]%b%{\e[0m%}
+%{\e[0;34m%}%B└─%B[%{\e[1;35m%}$%{\e[0;34m%}%B]>%{\e[0m%}%b '
+PS2=$' \e[0;34m%}%B>%{\e[0m%}%b '
+# Clean, simple, compatible and meaningful.
+# Tested on Linux, Unix and Windows under ANSI colors.
+# It is recommended to use with a dark background.
+# Colors: black, red, green, yellow, *blue, magenta, cyan, and white.
+#
+# Mar 2013 Yad Smood
+
+# VCS
+YS_VCS_PROMPT_PREFIX1=" %{$fg[white]%}on%{$reset_color%} "
+YS_VCS_PROMPT_PREFIX2=":%{$fg[cyan]%}"
+YS_VCS_PROMPT_SUFFIX="%{$reset_color%}"
+YS_VCS_PROMPT_DIRTY=" %{$fg[red]%}x"
+YS_VCS_PROMPT_CLEAN=" %{$fg[green]%}o"
+
+# Git info
+local git_info='$(git_prompt_info)'
+ZSH_THEME_GIT_PROMPT_PREFIX="${YS_VCS_PROMPT_PREFIX1}git${YS_VCS_PROMPT_PREFIX2}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="$YS_VCS_PROMPT_SUFFIX"
+ZSH_THEME_GIT_PROMPT_DIRTY="$YS_VCS_PROMPT_DIRTY"
+ZSH_THEME_GIT_PROMPT_CLEAN="$YS_VCS_PROMPT_CLEAN"
+
+# HG info
+local hg_info='$(ys_hg_prompt_info)'
+ys_hg_prompt_info() {
+	# make sure this is a hg dir
+	if [ -d '.hg' ]; then
+		echo -n "${YS_VCS_PROMPT_PREFIX1}hg${YS_VCS_PROMPT_PREFIX2}"
+		echo -n $(hg branch 2>/dev/null)
+		if [ -n "$(hg status 2>/dev/null)" ]; then
+			echo -n "$YS_VCS_PROMPT_DIRTY"
+		else
+			echo -n "$YS_VCS_PROMPT_CLEAN"
+		fi
+		echo -n "$YS_VCS_PROMPT_SUFFIX"
+	fi
+}
+
+local exit_code="%(?,,C:%{$fg[red]%}%?%{$reset_color%})"
+
+# Prompt format:
+#
+# PRIVILEGES USER @ MACHINE in DIRECTORY on git:BRANCH STATE [TIME] C:LAST_EXIT_CODE
+# $ COMMAND
+#
+# For example:
+#
+# % ys @ ys-mbp in ~/.oh-my-zsh on git:master x [21:47:42] C:0
+# $
+PROMPT="
+%{$terminfo[bold]$fg[blue]%}#%{$reset_color%} \
+%(#,%{$bg[yellow]%}%{$fg[black]%}%n%{$reset_color%},%{$fg[cyan]%}%n) \
+%{$fg[white]%}@ \
+%{$fg[green]%}%m \
+%{$fg[white]%}in \
+%{$terminfo[bold]$fg[yellow]%}%~%{$reset_color%}\
+${hg_info}\
+${git_info}\
+ \
+%{$fg[white]%}[%*] $exit_code
+%{$terminfo[bold]$fg[red]%}$ %{$reset_color%}"
+autoload -Uz vcs_info
+
+zstyle ':vcs_info:*' stagedstr '%F{green}●'
+zstyle ':vcs_info:*' unstagedstr '%F{yellow}●'
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:(sv[nk]|bzr):*' branchformat '%b%F{1}:%F{11}%r'
+zstyle ':vcs_info:*' enable git svn
+theme_precmd () {
+    if [[ -z $(git ls-files --other --exclude-standard 2> /dev/null) ]] {
+        zstyle ':vcs_info:*' formats ' [%b%c%u%B%F{green}]'
+    } else {
+        zstyle ':vcs_info:*' formats ' [%b%c%u%B%F{red}●%F{green}]'
+    }
+
+    vcs_info
+}
+
+setopt prompt_subst
+PROMPT='%B%F{blue}%c%B%F{green}${vcs_info_msg_0_}%B%F{magenta} %{$reset_color%}% '
+
+autoload -U add-zsh-hook
+add-zsh-hook precmd  theme_precmd
+
+#!/usr/bin/env zsh
+
+# ------------------------------------------------------------------------------
+#
+# Pure - A minimal and beautiful theme for oh-my-zsh
+#
+# Based on the custom Zsh-prompt of the same name by Sindre Sorhus. A huge
+# thanks goes out to him for designing the fantastic Pure prompt in the first
+# place! I'd also like to thank Julien Nicoulaud for his "nicoulaj" theme from
+# which I've borrowed both some ideas and some actual code. You can find out
+# more about both of these fantastic two people here:
+#
+# Sindre Sorhus
+#   Github:   https://github.com/sindresorhus
+#   Twitter:  https://twitter.com/sindresorhus
+#
+# Julien Nicoulaud
+#   Github:   https://github.com/nicoulaj
+#   Twitter:  https://twitter.com/nicoulaj
+#
+# ------------------------------------------------------------------------------
+
+# Set required options
+#
+setopt prompt_subst
+
+# Load required modules
+#
+autoload -Uz vcs_info
+
+# Set vcs_info parameters
+#
+zstyle ':vcs_info:*' enable hg bzr git
+zstyle ':vcs_info:*:*' unstagedstr '!'
+zstyle ':vcs_info:*:*' stagedstr '+'
+zstyle ':vcs_info:*:*' formats "$FX[bold]%r$FX[no-bold]/%S" "%s/%b" "%%u%c"
+zstyle ':vcs_info:*:*' actionformats "$FX[bold]%r$FX[no-bold]/%S" "%s/%b" "%u%c (%a)"
+zstyle ':vcs_info:*:*' nvcsformats "%~" "" ""
+
+# Fastest possible way to check if repo is dirty
+#
+git_dirty() {
+    # Check if we're in a git repo
+    command git rev-parse --is-inside-work-tree &>/dev/null || return
+    # Check if it's dirty
+    command git diff --quiet --ignore-submodules HEAD &>/dev/null; [ $? -eq 1 ] && echo "*"
+}
+
+# Display information about the current repository
+#
+repo_information() {
+    echo "%F{blue}${vcs_info_msg_0_%%/.} %F{8}$vcs_info_msg_1_`git_dirty` $vcs_info_msg_2_%f"
+}
+
+# Displays the exec time of the last command if set threshold was exceeded
+#
+cmd_exec_time() {
+    local stop=`date +%s`
+    local start=${cmd_timestamp:-$stop}
+    let local elapsed=$stop-$start
+    [ $elapsed -gt 5 ] && echo ${elapsed}s
+}
+
+# Get the initial timestamp for cmd_exec_time
+#
+preexec() {
+    cmd_timestamp=`date +%s`
+}
+
+# Output additional information about paths, repos and exec time
+#
+precmd() {
+    vcs_info # Get version control info before we start outputting stuff
+    print -P "\n$(repo_information) %F{yellow}$(cmd_exec_time)%f"
+}
+
+# Define prompts
+#
+PROMPT="%(?.%F{magenta}.%F{red})❯%f " # Display a red prompt char on failure
+RPROMPT="%F{8}${SSH_TTY:+%n@%m}%f"    # Display username if connected via SSH
+
+# ------------------------------------------------------------------------------
+#
+# List of vcs_info format strings:
+#
+# %b => current branch
+# %a => current action (rebase/merge)
+# %s => current version control system
+# %r => name of the root directory of the repository
+# %S => current path relative to the repository root directory
+# %m => in case of Git, show information about stashes
+# %u => show unstaged changes in the repository
+# %c => show staged changes in the repository
+#
+# List of prompt format strings:
+#
+# prompt:
+# %F => color dict
+# %f => reset color
+# %~ => current path
+# %* => time
+# %n => username
+# %m => shortname host
+# %(?..) => prompt conditional - %(condition.true.false)
+#
+# ------------------------------------------------------------------------------

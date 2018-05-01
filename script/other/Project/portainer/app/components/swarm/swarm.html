@@ -1,0 +1,204 @@
+<rd-header>
+  <rd-header-title title="Cluster overview">
+    <a data-toggle="tooltip" title="Refresh" ui-sref="swarm" ui-sref-opts="{reload: true}">
+      <i class="fa fa-refresh" aria-hidden="true"></i>
+    </a>
+  </rd-header-title>
+  <rd-header-content>Swarm</rd-header-content>
+</rd-header>
+
+<div class="row">
+  <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <rd-widget>
+      <rd-widget-header icon="fa-object-group" title="Cluster status"></rd-widget-header>
+      <rd-widget-body classes="no-padding">
+        <table class="table">
+          <tbody>
+            <tr>
+              <td>Nodes</td>
+              <td ng-if="!swarm_mode">{{ swarm.Nodes }}</td>
+              <td ng-if="swarm_mode">{{ info.Swarm.Nodes }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Images</td>
+              <td>{{ info.Images }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Swarm version</td>
+              <td>{{ docker.Version|swarmversion }}</td>
+            </tr>
+            <tr>
+              <td>Docker API version</td>
+              <td>{{ docker.ApiVersion }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Strategy</td>
+              <td>{{ swarm.Strategy }}</td>
+            </tr>
+            <tr>
+              <td>Total CPU</td>
+              <td ng-if="!swarm_mode">{{ info.NCPU }}</td>
+              <td ng-if="swarm_mode">{{ totalCPU }}</td>
+            </tr>
+            <tr>
+              <td>Total memory</td>
+              <td ng-if="!swarm_mode">{{ info.MemTotal|humansize: 2 }}</td>
+              <td ng-if="swarm_mode">{{ totalMemory|humansize: 2 }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Operating system</td>
+              <td>{{ info.OperatingSystem }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Kernel version</td>
+              <td>{{ info.KernelVersion }}</td>
+            </tr>
+            <tr ng-if="!swarm_mode">
+              <td>Go version</td>
+              <td>{{ docker.GoVersion }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </rd-widget-body>
+    </rd-widget>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-if="!swarm_mode">
+    <rd-widget>
+      <rd-widget-header icon="fa-hdd-o" title="Node status"></rd-widget-header>
+      <rd-widget-body classes="no-padding">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Name')">
+                  Name
+                  <span ng-show="sortType == 'Name' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Name' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('cpu')">
+                  CPU
+                  <span ng-show="sortType == 'cpu' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'cpu' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('memory')">
+                  Memory
+                  <span ng-show="sortType == 'memory' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'memory' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('IP')">
+                  IP
+                  <span ng-show="sortType == 'IP' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'IP' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Engine')">
+                  Engine
+                  <span ng-show="sortType == 'Engine' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Engine' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Status')">
+                  Status
+                  <span ng-show="sortType == 'Status' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Status' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr dir-paginate="node in (state.filteredNodes = (swarm.Status | filter:state.filter | orderBy:sortType:sortReverse | itemsPerPage: pagination_count))">
+              <td>{{ node.name }}</td>
+              <td>{{ node.cpu }}</td>
+              <td>{{ node.memory }}</td>
+              <td>{{ node.ip }}</td>
+              <td>{{ node.version }}</td>
+              <td><span class="label label-{{ node.status|nodestatusbadge }}">{{ node.status }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination-controls">
+          <dir-pagination-controls></dir-pagination-controls>
+        </div>
+      </rd-widget-body>
+    </rd-widget>
+  </div>
+  <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-if="swarm_mode">
+    <rd-widget>
+      <rd-widget-header icon="fa-hdd-o" title="Node status"></rd-widget-header>
+      <rd-widget-body classes="no-padding">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Name')">
+                  Name
+                  <span ng-show="sortType == 'Name' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Name' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('type')">
+                  Role
+                  <span ng-show="sortType == 'type' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'type' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('cpu')">
+                  CPU
+                  <span ng-show="sortType == 'cpu' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'cpu' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('memory')">
+                  Memory
+                  <span ng-show="sortType == 'memory' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'memory' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Engine')">
+                  Engine
+                  <span ng-show="sortType == 'Engine' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Engine' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+              <th>
+                <a ui-sref="swarm" ng-click="order('Status')">
+                  Status
+                  <span ng-show="sortType == 'Status' && !sortReverse" class="glyphicon glyphicon-chevron-down"></span>
+                  <span ng-show="sortType == 'Status' && sortReverse" class="glyphicon glyphicon-chevron-up"></span>
+                </a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr dir-paginate="node in (state.filteredNodes = (nodes | filter:state.filter | orderBy:sortType:sortReverse | itemsPerPage: pagination_count))">
+              <td>{{ node.Description.Hostname }}</td>
+              <td>{{ node.Spec.Role }}</td>
+              <td>{{ node.Description.Resources.NanoCPUs / 1000000000 }}</td>
+              <td>{{ node.Description.Resources.MemoryBytes|humansize }}</td>
+              <td>{{ node.Description.Engine.EngineVersion }}</td>
+              <td><span class="label label-{{ node.Status.State|nodestatusbadge }}">{{ node.Status.State }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination-controls">
+          <dir-pagination-controls></dir-pagination-controls>
+        </div>
+      </rd-widget-body>
+    </rd-widget>
+  </div>
+</div>

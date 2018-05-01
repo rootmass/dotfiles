@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# name     : set-screen, set screen
+# author   : Xu Xiaodong <xxdlhy@gmail.com>
+# license  : GPL
+# created  : 2014 Mar 19
+# modified : 2016 May 07
+#
+
+TYPE=$1
+xrandr --output $TYPE --auto

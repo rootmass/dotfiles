@@ -1,0 +1,41 @@
+(defun next-or-new-line()
+  (interactive)
+  (let ((pos (point))
+        (start (line-beginning-position))
+        (end (line-end-position)))
+    (forward-line)
+    (when (or (= pos (point))
+              (= end (point)))
+      (newline))))
+
+(defun insert-continuous-numbers(start end step)
+  (let* ((i start))
+    (while (< i (+ 1 end))
+      (dotimes (times
+                (- (length (number-to-string end)) (length (number-to-string i))))
+        (insert " "))
+      (insert (number-to-string i))
+      (next-or-new-line)
+      (setq i (+ i step)))))
+
+(defun step-start-end-insert-continuous-numbers(step start end)
+  (interactive "nStep: \nnStart: \nnEnd:")
+  (beginning-of-line)
+  (insert-continuous-numbers start end step))
+
+(defun step-end-insert-continuous-numbers(step end)
+  (interactive "nStep: \nnEnd:")
+  (beginning-of-line)
+  (insert-continuous-numbers 0 end step))
+
+(defun start-end-insert-continuous-numbers(start end)
+  (interactive "nStart: \nnEnd:")
+  (beginning-of-line)
+  (insert-continuous-numbers start end 1))
+
+(defun end-insert-continuous-numbers(end)
+  (interactive "nEnd:")
+  (beginning-of-line)
+  (insert-continuous-numbers 0 end 1))
+
+(provide 'init-insert-continuous-numbers)

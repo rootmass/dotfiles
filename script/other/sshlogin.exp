@@ -1,0 +1,17 @@
+#!/usr/bin/expect 
+
+set port 22 
+set user username
+set host 115.28.48.187  
+set password pass
+set timeout -1  
+
+set timeout -1
+
+spawn ssh -4 -p $port $user@$host 
+expect {
+     "yes/no" { send "yes\r";exp_continue }
+    "*password:*" {send "${password}\r";exp_continue}
+    
+}
+expect eof

@@ -1,0 +1,11 @@
+#vmflag,template,name,disk1_size,disk2_size,mem_size,cpu_num,nic_type,nic1_bridge,nic2_bridge,vnc_port,outip,outmask,outgw,inip,inmask,ingw
+#vm template name must be ''win2003ent32chs' 'win2003ent64chs' 'win2008ent64chs' 'centos56x64' 'ubuntu1204X64'
+#keyword vmLvm means create lvm for vm,default vg is datavg
+#keyword vmCpOnly means not resize images , just cp imaiges,default vg is datavg
+#kerword url: means download vm images path,like 
+#url:http://172.16.1.100/
+url:ftp://virtftp:QmjfNGRFJ9EHyI5teZFz@211.147.0.120:38602/
+url:ftp://virtftp:v39Ufjp5rdoYhoGb5Kw8@116.211.20.200:38602/
+#vm,win2003ent32chs,win2003-138,20G,20G,2048,2,e1000,br1,br1,5921,10.10.10.21,255.255.255.0,10.10.10.1,192.168.122.138,255.255.255.0,none
+#vmLvm,win2003ent32chs,virt1-lab-222,10G,10G,2048,2,e1000,br2,br2,59222,10.0.0.222,255.0.0.0,10.0.0.1,172.16.2.222,255.255.255.0,none
+#vmCpOnly,centos6564.qcow2,centos65-8,30G,20G,2048,2,virtio,br1,br1,59008,10.10.10.8,255.255.255.0,10.10.10.1,172.16.2.8,255.255.255.0,none

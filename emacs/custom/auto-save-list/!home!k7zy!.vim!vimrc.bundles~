@@ -1,0 +1,84 @@
+if &compatible
+	set nocompatible
+end
+
+filetype off
+set rtp+=~/.vim/bundle/vundle
+call vundle#rc()
+Bundle "gmarik/vundle"
+" 星级越多越推荐, 5星为必选，4星强烈推荐，3星比较推荐
+" 文件模糊匹配查找 推荐：****
+Bundle "ctrlpvim/ctrlp.vim"
+" 函数模糊匹配查找(fu) 推荐：****
+Bundle 'tacahiroy/ctrlp-funky'
+" 文件索引树 推荐：*****
+Bundle "scrooloose/nerdtree"
+" 自动注释 推荐：*****
+Bundle 'scrooloose/nerdcommenter'
+" 语法检查 推荐：****
+"Bundle "scrooloose/syntastic"
+" 括号自动匹配 推荐：****
+Bundle 'jiangmiao/auto-pairs'
+" 括号自动高亮显示 
+" Bundle 'kien/rainbow_parentheses.vim'
+Bundle 'luochen1990/rainbow'
+" 自动补全神器
+Bundle "Valloric/YouCompleteMe"
+" 引号处理 推荐：****
+Bundle 'tpope/vim-surround'
+" 光标多行编辑 <C-n> <C-x> <C-p> 推荐：****
+Bundle 'terryma/vim-multiple-cursors'
+" 配色主题 推荐：****
+Bundle "altercation/vim-colors-solarized"
+" 缩进引导线 推荐：****
+"Bundle "nathanaelkane/vim-indent-guides"
+" 文本同级文字选取，和文本处理 推荐：****
+" Bundle 'kana/vim-textobj-indent'
+" Bundle 'kana/vim-textobj-user'
+" 保存vim编辑信息，比如最后的位置 推荐：****
+Bundle "vim-scripts/restore_view.vim"
+
+" 状态栏效果 推荐：***
+"Bundle "bling/vim-airline"
+Bundle "vim-airline/vim-airline"
+Bundle "vim-airline/vim-airline-themes"
+
+" python 推荐：****
+" Bundle 'yssource/python.vim'
+" Bundle 'python_match.vim'
+Bundle 'pythoncomplete'
+Bundle 'hdima/python-syntax'
+Bundle 'hynek/vim-python-pep8-indent'
+Bundle 'davidhalter/jedi-vim'
+Bundle 'SirVer/ultisnips'
+Bundle 'honza/vim-snippets'
+
+" js 推荐：****
+Bundle 'elzr/vim-json'
+Bundle 'groenewege/vim-less'
+Bundle 'pangloss/vim-javascript'
+Bundle 'briancollins/vim-jst'
+Bundle 'kchmck/vim-coffee-script'
+
+" html 推荐：****
+Bundle 'amirh/HTML-AutoCloseTag'
+Bundle 'hail2u/vim-css3-syntax'
+Bundle 'gorodinskiy/vim-coloresque'
+" Bundle 'tpope/vim-haml'
+Bundle 'mattn/emmet-vim'
+" Bundle 'pearofducks/ansible-vim'
+
+"devicons
+Bundle 'ryanoasis/vim-devicons'
+
+Bundle 'edvb/catium'
+
+
+
+" Go
+" Bundle "fatih/vim-go"
+
+if filereadable(expand("~/.vimrc.bundles.local"))
+source ~/.vimrc.bundles.local
+endif
+filetype on

@@ -1,0 +1,8 @@
+{
+  "server": "2333.sscat.win",
+  "server_port": 51342,
+  "local_port": 1080,
+  "password": "wtCA90viGJ",
+  "timeout": 600,
+  "method": "aes-256-cfb"
+}

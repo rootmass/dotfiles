@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="48"
+   height="48"
+   id="svg4216"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   viewBox="0 0 48 48"
+   sodipodi:docname="preferences-desktop-locale.svg">
+  <defs
+     id="defs4218" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#242424"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11"
+     inkscape:cx="27.298614"
+     inkscape:cy="20.835191"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:document-units="px"
+     inkscape:grid-bbox="true"
+     showguides="false"
+     inkscape:guide-bbox="true"
+     objecttolerance="10000"
+     guidetolerance="10000"
+     inkscape:snap-path-clip="true"
+     inkscape:snap-perpendicular="true"
+     inkscape:snap-tangential="true"
+     inkscape:window-width="1366"
+     inkscape:window-height="704"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4764" />
+    <sodipodi:guide
+       position="0,57"
+       orientation="1,0"
+       id="guide4768" />
+    <sodipodi:guide
+       position="17,0"
+       orientation="0,1"
+       id="guide4772" />
+    <sodipodi:guide
+       position="40,48"
+       orientation="0,1"
+       id="guide4150" />
+    <sodipodi:guide
+       position="3,11"
+       orientation="1,0"
+       id="guide4154" />
+    <sodipodi:guide
+       position="7,45"
+       orientation="0,1"
+       id="guide4156" />
+    <sodipodi:guide
+       position="24,3"
+       orientation="0,1"
+       id="guide4160" />
+    <sodipodi:guide
+       position="45,41"
+       orientation="1,0"
+       id="guide4143" />
+    <sodipodi:guide
+       position="24,14"
+       orientation="1,0"
+       id="guide4251" />
+    <sodipodi:guide
+       position="48,0"
+       orientation="0.70710678,0.70710678"
+       id="guide4146" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata4221">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Chris D</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:description>diazchris.deviantart.com</dc:description>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     transform="translate(0,-16)">
+    <rect
+       style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#6acb9c;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect4249"
+       width="25"
+       height="25"
+       x="20"
+       y="36" />
+    <path
+       style="opacity:1;fill:#6acb9c;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 31.078947,39.5 0,1.894737 -4.736842,0 -0.947368,0 -1.894737,0 0,4.736842 2.842105,0 0,-1.894737 12.31579,0 0,1.894737 2.842105,0 0,-4.736842 -1.894737,0 -0.947368,0 -4.736842,0 0,-1.894737 -2.842106,0 z m -3.789473,5.684211 0,2.842105 6.631579,0 -1.894737,1.894737 -8.526316,0 0,2.842105 8.526316,0 0,1.894737 -2.842105,0 0,2.842105 5.68421,0 0,-2.842105 0,-1.894737 6.631579,0 0,-2.842105 -6.631579,0 2.842105,-1.894737 0,-2.842105 -10.421052,0 z"
+       id="rect4230"
+       inkscape:connector-curvature="0" />
+    <rect
+       style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#6caace;stroke-width:0.53231287;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect4247"
+       width="24.967688"
+       height="24.967688"
+       x="3.0161564"
+       y="19.016157" />
+    <path
+       d="m 20.251742,40.863164 -1.352174,-4.439211 -6.799136,0 -1.352174,4.439211 -4.2606218,0 6.5822788,-18.726327 4.834658,0 6.607791,18.726327 -4.260622,0 z m -2.296144,-7.755863 q -1.875183,-6.033754 -2.117555,-6.824649 -0.229613,-0.790894 -0.331664,-1.250121 -0.420959,1.632813 -2.410951,8.07477 l 4.860171,0 z"
+       id="path4167"
+       inkscape:connector-curvature="0"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:64px;line-height:125%;font-family:'Open Sans';-inkscape-font-specification:'Open Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#6caace;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+  </g>
+</svg>

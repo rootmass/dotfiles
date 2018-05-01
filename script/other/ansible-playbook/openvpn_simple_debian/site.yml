@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  roles:
+    - role: common
+
+- hosts: monogo_servers
+  roles:
+    - role: mongodb_parameter
+  

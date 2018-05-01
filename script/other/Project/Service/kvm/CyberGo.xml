@@ -1,0 +1,10 @@
+<network>
+  <name>CyberGo</name>
+  <bridge name="virbr0"/>
+  <forward/>
+  <ip address="172.17.44.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="172.17.44.2" end="172.17.44.254"/>
+    </dhcp>
+  </ip>
+</network>

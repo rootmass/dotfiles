@@ -1,0 +1,49 @@
+{
+  "name": "portainer",
+  "version": "1.10.2",
+  "homepage": "https://github.com/portainer/portainer",
+  "authors": [
+    "Anthony Lapenna <anthony.lapenna at gmail dot com>"
+  ],
+  "description": "A web interface for the Docker Remote API.",
+  "keywords": [
+    "docker",
+    "ui",
+    "api",
+    "portainer",
+    "uifordocker",
+    "dockerui"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "Chart.js": "1.0.2",
+    "angular": "~1.5.0",
+    "angular-cookies": "~1.5.0",
+    "angular-bootstrap": "~1.0.3",
+    "angular-ui-router": "^0.2.15",
+    "angular-sanitize": "~1.5.0",
+    "angular-mocks": "~1.5.0",
+    "angular-resource": "~1.5.0",
+    "angular-ui-select": "~0.17.1",
+    "angular-utils-pagination": "~0.11.1",
+    "bootstrap": "~3.3.6",
+    "font-awesome": "~4.6.3",
+    "filesize": "~3.3.0",
+    "jquery": "1.11.1",
+    "jquery.gritter": "1.7.4",
+    "lodash": "4.12.0",
+    "rdash-ui": "1.0.*",
+    "moment": "~2.14.1",
+    "xterm.js": "~2.0.1"
+  },
+  "resolutions": {
+    "angular": "1.5.5"
+  }
+}

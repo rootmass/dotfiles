@@ -1,0 +1,6 @@
+version: '2'
+services:
+    db: 
+      image: mysql 
+      environment: 
+        - MYSQL_ROOT_PASSWORD=PassW0rd

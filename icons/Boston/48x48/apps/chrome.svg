@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="48"
+   height="48"
+   id="svg4216"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   viewBox="0 0 48 48"
+   sodipodi:docname="chrome.svg">
+  <title
+     id="title4156">Boston Icons</title>
+  <defs
+     id="defs4218" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#242424"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11"
+     inkscape:cx="-16.025872"
+     inkscape:cy="21.56823"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:document-units="px"
+     inkscape:grid-bbox="true"
+     showguides="false"
+     inkscape:guide-bbox="true"
+     objecttolerance="10000"
+     guidetolerance="10000"
+     inkscape:snap-path-clip="true"
+     inkscape:snap-perpendicular="true"
+     inkscape:snap-tangential="true"
+     inkscape:window-width="1366"
+     inkscape:window-height="704"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4764" />
+    <sodipodi:guide
+       position="0,57"
+       orientation="1,0"
+       id="guide4768" />
+    <sodipodi:guide
+       position="17,0"
+       orientation="0,1"
+       id="guide4772" />
+    <sodipodi:guide
+       position="40,48"
+       orientation="0,1"
+       id="guide4150" />
+    <sodipodi:guide
+       position="3,41"
+       orientation="1,0"
+       id="guide4154" />
+    <sodipodi:guide
+       position="7,45"
+       orientation="0,1"
+       id="guide4156" />
+    <sodipodi:guide
+       position="24,3"
+       orientation="0,1"
+       id="guide4160" />
+    <sodipodi:guide
+       position="45,25"
+       orientation="1,0"
+       id="guide4146" />
+    <sodipodi:guide
+       position="22,22"
+       orientation="-0.70710678,0.70710678"
+       id="guide4184" />
+    <sodipodi:guide
+       position="24,22"
+       orientation="1,0"
+       id="guide4186" />
+    <sodipodi:guide
+       position="23,24"
+       orientation="0,1"
+       id="guide4188" />
+    <sodipodi:guide
+       position="37,37"
+       orientation="1,0"
+       id="guide4190" />
+    <sodipodi:guide
+       position="24,24"
+       orientation="0.70710678,0.70710678"
+       id="guide4165" />
+    <sodipodi:guide
+       position="26,34"
+       orientation="0,1"
+       id="guide4308" />
+    <sodipodi:guide
+       position="20,39"
+       orientation="0,1"
+       id="guide4310" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata4221">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Boston Icons</dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Chris D</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:description>diazchris.deviantart.com</dc:description>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1"
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     transform="translate(0,-16)">
+    <path
+       style="opacity:1;fill:#fbe865;fill-opacity:1;fill-rule:nonzero;stroke:#fbc342;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 42.451172,30.015625 -18.144531,0 A 10,10 0 0 1 34,40 10,10 0 0 1 30.902344,47.230469 L 24.017578,61 A 21,21 0 0 0 45,40 21,21 0 0 0 42.451172,30.015625 Z"
+       id="path4294" />
+    <path
+       style="opacity:1;fill:#c4604a;fill-opacity:1;fill-rule:nonzero;stroke:#fbc342;stroke-width:0;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 24.017578,61 A 21,21 0 0 1 24,61 l 0.01367,0.0078 0.0039,-0.0078 z"
+       id="path4292" />
+    <path
+       style="opacity:1;fill:#c4604a;fill-opacity:1;fill-rule:nonzero;stroke:#fbc342;stroke-width:0;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 4.15625,33.193359 a 21,21 0 0 1 0.013672,-0.03516 l -0.1582031,-0.169922 -0.023438,0.02344 0.1679688,0.18164 z"
+       id="path4248" />
+    <path
+       style="opacity:1;fill:#c4604a;fill-opacity:1;fill-rule:nonzero;stroke:#fbc342;stroke-width:0;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 42.433594,29.984375 a 21,21 0 0 1 0.01758,0.03125 l 0.548828,0 0,-0.03125 -0.566406,0 z"
+       id="path4296" />
+    <path
+       style="opacity:1;fill:#84e4b6;fill-opacity:1;fill-rule:nonzero;stroke:#6acb9c;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 6.40625,12.580078 C 4.1918964,15.97793 3.0088363,19.944302 3,24 3,35.59798 12.40202,45 24,45 l 0.01758,0 6.884766,-13.769531 C 29.043189,33.006706 26.571278,33.998548 24,34 18.477153,34 14,29.522847 14,24 l 0.002,-0.02734 z"
+       id="path4364"
+       transform="translate(0,16)"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccscccccc" />
+    <path
+       style="opacity:1;fill:#e67760;fill-opacity:1;fill-rule:nonzero;stroke:#c4604a;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 24 3 A 21 21 0 0 0 6.40625 12.580078 L 14.001953 23.972656 A 10 10 0 0 1 24 14 L 24 13.984375 L 42.433594 13.984375 A 21 21 0 0 0 24 3 z "
+       id="path4298"
+       transform="translate(0,16)" />
+    <circle
+       style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#a9b0b9;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path4402"
+       cx="24"
+       cy="40"
+       r="10" />
+    <circle
+       style="opacity:1;fill:#99cef3;fill-opacity:1;fill-rule:nonzero;stroke:#6caace;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path4300"
+       cx="24"
+       cy="40"
+       r="7" />
+  </g>
+</svg>

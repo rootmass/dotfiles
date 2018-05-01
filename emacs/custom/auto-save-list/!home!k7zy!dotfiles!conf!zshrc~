@@ -1,0 +1,255 @@
+# Path to your oh-my-zsh installation.
+export ZSH=/home/k7zy/.oh-my-zsh
+
+# Set name of the theme to load.
+# Look in ~/.oh-my-zsh/themes/
+# Optionally, if you set this to "random", it'll load a random theme each
+# time that oh-my-zsh is loaded.
+ZSH_THEME="ys"
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion. Case
+# sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# auto-correctionENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
+# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git z colored-man-pages) 
+
+# User configuration
+
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:.local/bin:/opt/nodejs/bin/:/opt/metasploit-framework:$GOROOT/bin/:/usr/local/clamav/bin/:/opt/wine-staging/bin:/opt/ffmpeg"
+# export MANPATH="/usr/local/man:$MANPATH"
+
+export XAUTHORITY=~/.Xauthority
+
+source $ZSH/oh-my-zsh.sh
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+export ARCHFLAGS="-arch x86_64"
+
+# ssh
+# export SSH_KEY_PATH="~/.ssh/dsa_id"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+export GOROOT=/opt/go
+export GOPATH=/opt/Tools/HERCULES
+export PATH=$PATH:$GOROOT/bin
+export WORKOW_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/workspace
+export CDPATH=.:~:/mnt/
+#source /usr/local/bin/virtualenvwrapper.sh
+
+if [ "$TERM"=="xterm" ]; then
+    export TERM=xterm-256color
+fi
+
+alias mount='grc mount | column -t'
+alias bc='bc -ql'
+alias listen="lsof -P -i -n | lolcat" 
+alias mkdir='mkdir -vp'
+alias ll='grc ls -lh'
+alias ex='exit'
+alias ping='grc ping'
+alias dig='grc dig'
+alias traceroute='grc traceroute'
+alias last='grc last'
+alias ifconfig='sudo grc ifconfig'
+alias ps='grc ps'
+alias netstat='grc netstat'
+alias diff='grc diff'
+alias gcc='grc gcc'
+alias make='grc make'
+alias wdiff='grc wdiff'
+alias emacs='emacs -nw'
+alias emacsd='emacs --daemon'
+alias e='emacsclient -t'
+alias ec='emacsclient -c'
+alias xterm='xterm -geometry 95x19 -fg yellow -cr yellow -bc'
+
+alias pycat="pygmentize -O style=native, linenos=1 -f 256 -g $1 | pv -qL 1000"
+# alias cat='pygmentize -O style=monokai -f console256 -g'
+# pygmentize -g -O style=colorful,linenos=1
+
+alias status_code='python -c "import requests, sys; if len(sys.argv) < 2: print("<url OR ip>");sys.exit();else sys.argprint(requests.get(sys.argv[1]).status_code)"'
+# alias http_code='curl -I $1 -s -o /dev/null -w %{http_code}'
+
+alias n="sudo netstat -naltp | lolcat"
+alias f='free -m | lolcat'
+alias v='vim'
+alias c='clear'
+alias r='reset'
+
+eval "$(thefuck --alias fuck)"
+# run emacs daemon
+# [[ -z $(ps -C 'emacs --daemon' -o pid=) ]] && time emacsd &> /dev/null;
+
+# add kill emacs function
+function kill-emacs(){
+    emacsclient -e "(kill-emacs)"
+    emacs_pid=$( ps -C 'emacs --daemon' -o pid= )
+    if [[ -n "${emacs_pid}" ]];then
+        kill -9 "${emacs_pid}"
+    fi
+}
+
+# 压缩解压
+function ztar() {
+        [ "$1" != "" ] && tar -czRf $1.tar.gz $1 && echo "$1.tar.gz created successfully!"|| echo "Usage: tarz [folder_or_file]"
+}
+
+function jtar() {
+        [ "$1" != "" ] && tar -cjRf $1.tar.bz2 $1 && echo "$1.tar.bz2 created successfully!" || echo "Usage: tarj [folder_or_file]"
+}
+function Jtar() {
+    [ "$1" != "" ] && tar -cJRf  $1.tar.xz $1 && echo "$1.tar.bz2 created successfully!" || echo "Usage: tarJ [folder_or_file]"
+}
+
+function utar() {
+        [ "$1" != "" ] && tar -xvf $1 || echo "Usage: utar [tar_file_name]"
+}
+
+function extract() { 
+    if [ -f $1 ] ; then 
+      case $1 in 
+        *.tar.xz)     tar Jxvf $1    ;;
+        *.tar.bz2)   tar xvjf $1    ;; 
+        *.tar.gz)    tar xvzf $1    ;; 
+        *.bz2)       bunzip2 $1     ;; 
+        *.rar)       unrar e $1     ;; 
+        *.gz)        gunzip $1      ;; 
+        *.tar)       tar xvf $1     ;; 
+        *.tbz2)      tar xvjf $1    ;; 
+        *.tgz)       tar xvzf $1    ;; 
+        *.zip)       unzip $1       ;; 
+        *.Z)         uncompress $1  ;; 
+        *.7z)        7z x $1        ;; 
+        *.rar)       rar e $1       ;;
+        *)     echo "'$1' cannot be extracted via extract()" ;; 
+         esac 
+     else 
+         echo "'$1' is not a valid file" 
+     fi 
+}
+
+function encrypt(){
+    read  -p "Please enter your password: " number \n
+    tar -zcvf - $1 |openssl des3 -salt -k $number | dd of=$1.des3
+}
+
+function decrypt(){
+    read  -p "Please enter your password: " pass\n
+    dd if=$1 |openssl des3 -d -k $pass |tar zxf -
+}
+
+if [ "$TERM" = "linux" ]; then
+    echo -en "\e]P0232323" #black
+    echo -en "\e]P82B2B2B" #darkgrey
+    echo -en "\e]P1D75F5F" #darkred
+    echo -en "\e]P9E33636" #red
+    echo -en "\e]P287AF5F" #darkgreen
+    echo -en "\e]PA98E34D" #green
+    echo -en "\e]P3D7AF87" #brown
+    echo -en "\e]PBFFD75F" #yellow
+    echo -en "\e]P48787AF" #darkblue
+    echo -en "\e]PC7373C9" #blue
+    echo -en "\e]P5BD53A5" #darkmagenta
+    echo -en "\e]PDD633B2" #magenta
+    echo -en "\e]P65FAFAF" #darkcyan
+    echo -en "\e]PE44C9C9" #cyan
+    echo -en "\e]P7E5E5E5" #lightgrey
+    echo -en "\e]PFFFFFFF" #white
+    clear #for background artifacting
+fi
+
+[[ -s /home/k7zy/.autojump/etc/profile.d/autojump.sh  ]] && source /home/k7zy/.autojump/etc/profile.d/autojump.sh
+
+    autoload -U compinit && compinit -u
+
+[[ -s "$HOME/.local/share/marker/marker.sh"  ]] && source "$HOME/.local/share/marker/marker.sh"
+
+
+function vnoci(){
+    iconv -f gbk -t utf-8 $1
+}
+
+#Set oracle jdk environment
+#export JAVA_HOME=/opt/java/jdk1.8.0_121  ## 这里要注意目录要换成自己解压的jdk 目录
+#export JRE_HOME=${JAVA_HOME}/jre  
+#export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib  
+#export PATH=${JAVA_HOME}/bin:$PATH  
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="/home/k7zy/.sdkman"
+[[ -s "/home/k7zy/.sdkman/bin/sdkman-init.sh" ]] && source "/home/k7zy/.sdkman/bin/sdkman-init.sh"
+
+
+# Global proxy ...
+# export http_proxy="http://127.0.0.1:8123/"
+#
+# Encrypt 用于加密。
+# gpg --recipient [用户ID] --output demo.en.txt --encrypt demo.txt
+# Secret-keys私钥解密
+# gpg --decrypt demo.en.txt --output demo.de.txt
+#
+export HERCULES_PATH=/opt/Tools/HERCULES
+export HERCULES_PATH=/opt/Tools/HERCULES
+
+# Command 
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D530E028F59EAE4D
+# ssh-copy-id -i ~/.ssh/id_rsa.pub root@192.168.1.168
+#
+# Downloads
+#wget -r -A pdf,pptx https://exploit.courses/files/bfh2017
