@@ -4,7 +4,7 @@ services:
       restart: always
       image: mysql:5.7 
       volumes: 
-        - ./dbdata:/var/lib/mysql
+        - /tmp/dbdata:/var/lib/mysql
       ports: 
         - "3306:3306"
       environment: 
@@ -14,7 +14,7 @@ services:
     redis:
         image: redis:3.2
         volumes: 
-            - ./rdata/:/data
+            - /tmp/rdata/:/data
         ports: 
             - "6379:6379"
         command: redis-server --appendonly  yes
