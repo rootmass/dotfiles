@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: Log.d(TAG, )
-# key: logd
-# --
-Log.d(${1:TAG}, $0);

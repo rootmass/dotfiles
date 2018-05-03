@@ -1,8 +1,0 @@
-# -*- mode: snippet -*-'
-# contributor: Marco Ceresa https://github.com/bluemonk
-# name: Meteor mongo collection
-# key: coll
-# group: Meteor
-# binding: direct-keybinding
-# --
-$1 = new Mongo.Collection("$2");$0
