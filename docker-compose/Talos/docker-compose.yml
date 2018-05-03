@@ -1,0 +1,30 @@
+version: '2'
+services:
+    db: 
+      restart: always
+      image: mysql:5.7 
+      volumes: 
+        - ./dbdata:/var/lib/mysql
+      ports: 
+        - "3306:3306"
+      environment: 
+        - MYSQL_USER=root
+        - MYSQL_ROOT_PASSWORD=PassW0rd
+
+    redis:
+        image: redis:3.2
+        volumes: 
+            - ./rdata/:/data
+        ports: 
+            - "6379:6379"
+        command: redis-server --appendonly  yes
+
+    mongodb:
+        image: mongo
+        ports: 
+        - "27017:27017"
+        - "28017:28017"
+        environment: 
+            - AUTO=no
+        container_name: mongodb
+        restart: always

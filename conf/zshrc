@@ -52,18 +52,51 @@ export UPDATE_ZSH_DAYS=13
 plugins=(git z colored-man-pages nmap) 
 
 # User configuration
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/opt/metasploit-framework:$GOROOT/bin/:/usr/local/clamav/bin/:/opt/ffmpeg:/opt/google-cloud-sdk/bin:/home/k7zy/.local/bin"
 
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/opt/metasploit-framework:$GOROOT/bin/:/usr/local/clamav/bin/:/opt/ffmpeg:~/.local/bin:/opt/google-cloud-sdk/bin"
+# Add NVM to PATH for scripting. Make sure this is the last PATH variable change.
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh"  ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion"  ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
+
+# Add PYENV to PATH for scripting. Make sure this is the last PATH variable change.
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
 # export MANPATH="/usr/local/man:$MANPATH"
+export GOROOT=/opt/go
+export PATH=$PATH:$GOROOT/bin
+export WORKOW_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/workspace
+export CDPATH=.:~:/mnt/
+#source /usr/local/bin/virtualenvwrapper.sh
+#
+#Set oracle jdk environment
+#export JAVA_HOME=/opt/java/jdk1.8.0_121  ## 这里要注意目录要换成自己解压的jdk 目录
+#export JRE_HOME=${JAVA_HOME}/jre  
+#export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib  
+#export PATH=${JAVA_HOME}/bin:$PATH  
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="/home/k7zy/.sdkman"
+[[ -s "/home/k7zy/.sdkman/bin/sdkman-init.sh" ]] && source "/home/k7zy/.sdkman/bin/sdkman-init.sh"
+
+
+if [ "$TERM"=="xterm" ]; then
+    export TERM=xterm-256color
+fi
 
 export XAUTHORITY=~/.Xauthority
 
 source $ZSH/oh-my-zsh.sh
-source <(kubectl completion zsh)
-source <(helm completion zsh)
-source <(kompose completion zsh)
-source <(/usr/bin/zsh /opt/google-cloud-sdk/completion.zsh.inc)
-source <(/usr/bin/zsh /opt/google-cloud-sdk/path.zsh.inc)
+#source <(kubectl completion zsh)
+#source <(helm completion zsh)
+#source <(kompose completion zsh)
+#source <(/usr/bin/zsh /opt/google-cloud-sdk/completion.zsh.inc)
+#source <(/usr/bin/zsh /opt/google-cloud-sdk/path.zsh.inc)
 
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
@@ -74,7 +107,7 @@ source <(/usr/bin/zsh /opt/google-cloud-sdk/path.zsh.inc)
 # else
 #   export EDITOR='mvim'
 # fi
- 
+# 
 #Color Set 
 #
 RED='\033[0;31m'
@@ -98,55 +131,25 @@ export ARCHFLAGS="-arch x86_64"
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-export GOROOT=/opt/go
-export GOPATH=/opt/Tools/HERCULES
-export PATH=$PATH:$GOROOT/bin
-export WORKOW_HOME=$HOME/.virtualenvs
-export PROJECT_HOME=$HOME/workspace
-export CDPATH=.:~:/mnt/
-#source /usr/local/bin/virtualenvwrapper.sh
-
-if [ "$TERM"=="xterm" ]; then
-    export TERM=xterm-256color
-fi
 alias cp='rsync -aP'
-
 alias bc='bc -ql'
 alias listen="lsof -P -i -n | lolcat" 
 alias mkdir='mkdir -vp'
-alias ll='grc ls -lh'
 alias ex='exit'
-alias ping='grc ping'
-alias dig='grc dig'
 alias sl='ls'
+alias ip='grc ip' ; alias ifconfig='grc ifconfig'
 alias traceroute='grc traceroute'
-alias last='grc last'
-alias ifconfig='sudo grc ifconfig'
-alias ps='grc ps'
-alias netstat='grc netstat'
-alias diff='grc diff'
-alias gcc='grc gcc'
-alias make='grc make'
-alias wdiff='grc wdiff'
-# alias emacs='LC_CTYPE=zh_CN.UTF-8 emacs' 
-alias emacsd='emacs --daemon'
-alias e='emacsclient -t'
-alias ec='emacsclient -c'
+alias emacsd='emacs --daemon'; alias e='emacsclient -t'; alias ec='emacsclient -c'
 alias xterm='xterm -geometry 95x19 -fg yellow -cr yellow -bc'
 alias sshremote='ssh Zipper@139.196.94.255'
-
 alias pycat="pygmentize -O style=native, linenos=1 -f 256 -g $1 | pv -qL 1000"
+alias http_code='curl -I $1 -s -o /dev/null -w %{http_code}'
+alias n="sudo netstat -naltp | lolcat"; alias f='free -m | lolcat'; alias v='vim'; alias c='clear'; alias r='reset'
+# alias emacs='LC_CTYPE=zh_CN.UTF-8 emacs' 
 # alias cat='pygmentize -O style=monokai -f console256 -g'
 # pygmentize -g -O style=colorful,linenos=1
 
 # alias status_code='python -c "import requests, sys; print(requests.get(sys.argv[1]).status_code)"'
-alias http_code='curl -I $1 -s -o /dev/null -w %{http_code}'
-
-alias n="sudo netstat -naltp | lolcat"
-alias f='free -m | lolcat'
-alias v='vim'
-alias c='clear'
-alias r='reset'
 
 #eval "$(thefuck --alias fuck)"
 # run emacs daemon
@@ -298,19 +301,9 @@ function keys(){
     esac
 }
 
-translate(){ 
+function translate(){ 
     proxychains wget -qO- "http://ajax.googleapis.com/ajax/services/language/translate?v=1.0&q=$1&langpair=$2|${3:-en}" | sed 's/.*"translatedText":"\([^"]*\)".*}/\1\n/'; 
 }
-#Set oracle jdk environment
-#export JAVA_HOME=/opt/java/jdk1.8.0_121  ## 这里要注意目录要换成自己解压的jdk 目录
-#export JRE_HOME=${JAVA_HOME}/jre  
-#export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib  
-#export PATH=${JAVA_HOME}/bin:$PATH  
-
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="/home/k7zy/.sdkman"
-[[ -s "/home/k7zy/.sdkman/bin/sdkman-init.sh" ]] && source "/home/k7zy/.sdkman/bin/sdkman-init.sh"
-
 
 # Global proxy ...
 # export http_proxy="http://127.0.0.1:8123/"
@@ -320,8 +313,6 @@ export SDKMAN_DIR="/home/k7zy/.sdkman"
 # Secret-keys私钥解密
 # gpg --decrypt demo.en.txt --output demo.de.txt
 #
-export HERCULES_PATH=/opt/Tools/HERCULES
-export HERCULES_PATH=/opt/Tools/HERCULES
 # export LC_CTYPE=zh_CN.UTF-8
 
 # Command 
@@ -377,26 +368,10 @@ export HERCULES_PATH=/opt/Tools/HERCULES
 #    }
 #}
 
-#Virtualbox 从U盘启动
+#Virtualbox
 #VBoxManage internalcommands createrawvmdk -filename /home/k7zy/raw.vmdk -rawdisk /dev/sdb
 #
 #curl qrenco.de/k7zy.com
-#
-#█████████████████████████████
-#█████████████████████████████
-#████ ▄▄▄▄▄ █▀ █ ▄█ ▄▄▄▄▄ ████
-#████ █   █ █▄ █▀▄█ █   █ ████
-#████ █▄▄▄█ █ ██▀ █ █▄▄▄█ ████
-#████▄▄▄▄▄▄▄█ ▀ ▀ █▄▄▄▄▄▄▄████
-#████ ▄▀▄▀▀▄ ▀▄▄███   █▄▄▀████
-#████ ▄█ ▄▄▄███ ▀▄▀ ▄▀ █▄▄████
-#█████▄▄█▄▄▄▄▀▀█▀▄█  █ ▀█▀████
-#████ ▄▄▄▄▄ █▄▀ ▀▀▀▄▄ ▄█▄█████
-#████ █   █ █▀▄▀ █▄▄▀▀▄▀ ▀████
-#████ █▄▄▄█ █▀▀▄█▄▀▀ ▄ ▄█▄████
-#████▄▄▄▄▄▄▄█▄██▄▄██▄█▄█▄█████
-#█████████████████████████████
-#█████████████████████████████
 #
 #printf "two/nlines" \
     #curl -F-=\<- qrenco.de
@@ -407,14 +382,3 @@ export HERCULES_PATH=/opt/Tools/HERCULES
 #
 #curl -u k7zy https://api.github.com/user/repos -d '{"name":"Sylvia"}'
 #
-# Add NVM to PATH for scripting. Make sure this is the last PATH variable change.
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh"  ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion"  ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
-export PATH="$PATH:$HOME/.rvm/bin"
-
-# Add PYENV to PATH for scripting. Make sure this is the last PATH variable change.
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"

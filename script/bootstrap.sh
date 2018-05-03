@@ -18,6 +18,9 @@ function package() {
 
     apt-get install xclip wireshark tcpdump
     setcap cap_net_raw,cap_net_admin=eip /usr/bin/dumpcap
+    
+
+    git clone https://github.com/pipeseroni/pipes.sh.git && cd pipes.sh && make && make install
 }
 
 function docker(){
