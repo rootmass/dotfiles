@@ -92,8 +92,8 @@ fi
 export XAUTHORITY=~/.Xauthority
 
 source $ZSH/oh-my-zsh.sh
-#source <(kubectl completion zsh)
-#source <(helm completion zsh)
+source <(kubectl completion zsh)
+source <(helm completion zsh)
 #source <(kompose completion zsh)
 #source <(/usr/bin/zsh /opt/google-cloud-sdk/completion.zsh.inc)
 #source <(/usr/bin/zsh /opt/google-cloud-sdk/path.zsh.inc)
@@ -381,4 +381,10 @@ function translate(){
 #rename 's/.*/\U$&/g' anaconda-ks.cfg
 #
 #curl -u k7zy https://api.github.com/user/repos -d '{"name":"Sylvia"}'
-#
+# https://axionl.me/2018/01/27/blur-for-terminal/ 
+if [[ $(ps --no-header -p $PPID -o comm | grep -E '^(yakuake|konsole)$' ) ]]; then
+        for wid in $(xdotool search --pid $PPID); do
+            xprop -f _KDE_NET_WM_BLUR_BEHIND_REGION 32c -set _KDE_NET_WM_BLUR_BEHIND_REGION 0 -id $wid; done
+fi
+
+#https://eastlakeside.gitbooks.io/interpy-zh/content/

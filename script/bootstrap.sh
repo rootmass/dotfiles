@@ -13,7 +13,7 @@ export PATH
 #// Desktop Env
 function package() {
     apt update 
-    apt install tmux git curl wget zsh autojump docky htop grc thefuck proxychains4 -y
+    apt install tmux git curl wget zsh autojump docky htop grc thefuck proxychains4  ncmpcpp feh scrot neofetch mpdviz-y
     apt-get install tmux htop ibus ibus-table-wubi zsh docky dkms linux-headers-`uname -r` build-essential  qemu-kvm docker.io qtcurve kde-style-qtcurve kde-config-gtk-style-preview konsole grc htop conky realpath xtrlock
 
     apt-get install xclip wireshark tcpdump

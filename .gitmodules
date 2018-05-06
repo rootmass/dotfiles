@@ -1,0 +1,3 @@
+[submodule "backup/vagrant/kubernetes-vagrant-centos-cluster"]
+	path = backup/vagrant/kubernetes-vagrant-centos-cluster
+	url = git@github.com:K7zy/kubernetes-vagrant-centos-cluster.git
